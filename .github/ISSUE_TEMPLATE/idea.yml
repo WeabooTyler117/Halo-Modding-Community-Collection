@@ -1,0 +1,14 @@
+name: I have an idea
+description: Suggest a feature, a new game project to add, or a change.
+labels: [idea]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What's your idea?
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why would it help? (optional)

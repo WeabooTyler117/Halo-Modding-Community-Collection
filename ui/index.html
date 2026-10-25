@@ -1,0 +1,724 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Halo: MCC</title>
+<link rel="icon" href="favicon.ico?v=0.3.2" sizes="16x16 24x24 32x32 48x48 64x64 128x128 256x256">
+<link rel="apple-touch-icon" href="emblem.png?v=0.3.2">
+<style>
+:root {
+  --base: #0d1823;
+  --base-2: #0a131c;
+  --panel: #152433;
+  --line: #24384b;
+  --select: #bfe6ff;
+  --select-ink: #0b1a27;
+  --text: #e6eef5;
+  --muted: #7f93a6;
+  --ok: #7fd6a4;
+  --warn: #f0c46a;
+  --bad: #ff8a7a;
+  --accent: #bfe6ff;
+  --font: "Bahnschrift", "DIN Alternate", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { color-scheme: dark; }
+* { scrollbar-width: thin; scrollbar-color: #3a5670 transparent; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #3a5670; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #557796; }
+::-webkit-scrollbar-button { display: none; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--base);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.45;
+  overflow: hidden;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+button { font: inherit; color: inherit; }
+
+/* ---------- backdrop ---------- */
+.backdrop {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(1100px 700px at 78% 35%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 70%),
+    radial-gradient(900px 600px at 10% 110%, #12324a 0%, transparent 70%),
+    linear-gradient(180deg, var(--base) 0%, var(--base-2) 100%);
+  transition: background 600ms ease;
+}
+.backdrop::after { /* faint scanlines */
+  content: ""; position: absolute; inset: 0;
+  background: repeating-linear-gradient(0deg, rgba(255,255,255,.018) 0 1px, transparent 1px 4px);
+}
+/* per-game background art, crossfaded between two layers */
+.art {
+  position: fixed; top: 0; right: 0; bottom: 0; left: 26%; z-index: 0; pointer-events: none;
+  background-size: cover; background-position: center 20%; background-repeat: no-repeat;
+  opacity: 0; transition: opacity 600ms ease;
+}
+.art.on { opacity: 1; }
+.shade {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0; transition: opacity 600ms ease;
+  background:
+    linear-gradient(90deg, var(--base) 0%, var(--base) 27%, rgba(13,24,35,.88) 38%, rgba(13,24,35,.55) 62%, rgba(13,24,35,.25) 100%),
+    linear-gradient(0deg, rgba(5,10,15,.9) 0%, transparent 32%);
+}
+body.has-art .shade { opacity: 1; }
+body.has-art .bigword { opacity: 0; }
+body.has-art .detail { text-shadow: 0 1px 12px rgba(0,0,0,.65); }
+.bigword {
+  position: fixed; right: -2vw; top: 50%; transform: translateY(-58%);
+  z-index: 0; pointer-events: none;
+  font-weight: 700; font-stretch: condensed;
+  font-size: min(46vh, 34vw); line-height: .8; letter-spacing: -.02em;
+  color: transparent;
+  -webkit-text-stroke: 2px color-mix(in srgb, var(--accent) 45%, transparent);
+  opacity: .55; white-space: nowrap;
+  transition: opacity 300ms ease;
+}
+.bigword.swap { opacity: 0; }
+
+/* ---------- frame ---------- */
+.app {
+  position: relative; z-index: 1; height: 100%;
+  display: grid; grid-template-rows: auto 1fr auto;
+  padding: 28px 44px 0;
+}
+header { display: flex; align-items: baseline; gap: 18px; }
+.brand img { width: 40px; height: 40px; vertical-align: -13px; margin-right: 14px; }
+.brand { font-size: 15px; letter-spacing: .32em; font-weight: 600; color: var(--select); }
+.brand small { letter-spacing: .1em; color: var(--muted); font-weight: 400; margin-left: 10px; }
+.hdr-right { margin-left: auto; display: flex; align-items: center; gap: 26px; }
+.now { font-size: 14px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+.now .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 10px var(--ok); }
+.now b { color: var(--text); font-weight: 600; }
+
+main { display: grid; grid-template-columns: minmax(300px, 400px) 1fr; gap: 56px; min-height: 0; padding-top: 6vh; }
+
+/* ---------- game list ---------- */
+.list { display: flex; flex-direction: column; gap: 6px; min-height: 0; }
+#rows { display: flex; flex-direction: column; gap: 6px; }
+.list h2 { margin: 0 0 14px; font-size: 13px; font-weight: 400; color: var(--muted); letter-spacing: .08em; }
+.row {
+  position: relative; display: grid; grid-template-columns: 1fr auto; align-items: center; column-gap: 14px;
+  width: 100%; height: 64px; padding: 0 18px 0 22px; border: 0; text-align: left; cursor: pointer;
+  background: color-mix(in srgb, var(--panel) 70%, transparent);
+  border-left: 4px solid transparent;
+  transition: background 120ms ease, color 120ms ease;
+}
+.row .t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 24px; font-weight: 600; font-stretch: semi-condensed; letter-spacing: .02em; }
+.row .p { font-size: 13px; color: var(--muted); margin-top: -4px; }
+.row > span:first-child { min-width: 0; }
+.row .tag { white-space: nowrap; font-size: 12px; letter-spacing: .06em; color: var(--muted); }
+.row .tag.live { color: var(--ok); }
+.row .tag.beta { color: var(--warn); }
+.row:hover { background: color-mix(in srgb, var(--panel) 100%, transparent); }
+.row[aria-selected="true"] {
+  background: var(--select); color: var(--select-ink);
+  border-left-color: var(--row-accent);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.6), 0 0 40px color-mix(in srgb, var(--select) 30%, transparent);
+}
+.row[aria-selected="true"] .p, .row[aria-selected="true"] .tag { color: #3c5468; }
+.row[aria-selected="true"] .tag.live { color: #1c7a4a; }
+.row[aria-selected="true"] .tag.beta { color: #8a5d00; }
+.row:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+
+.footnote { margin-top: auto; padding-top: 24px; font-size: 13px; color: var(--muted); max-width: 46ch; }
+.footnote p { margin: 0 0 8px; }
+.footnote .legal { font-size: 12px; line-height: 1.45; color: #6f8396; }
+.footnote .linkbtn { font-size: 12px; padding: 0; color: #9db1c4; }
+
+/* ---------- detail ---------- */
+.detail { min-height: 0; overflow: auto; padding-right: 8px; max-width: 760px; }
+.detail .year { font-size: 14px; color: var(--muted); }
+.detail h1 {
+  margin: 4px 0 2px; font-size: clamp(44px, 6vw, 78px); line-height: .95;
+  font-weight: 700; font-stretch: condensed; letter-spacing: .01em;
+}
+.detail .by { font-size: 18px; color: var(--accent); margin-bottom: 18px; }
+.detail .tagline { font-size: 20px; max-width: 46ch; margin: 0 0 22px; color: #cfdbe6; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 26px; padding: 0; list-style: none; }
+.chips li { font-size: 14px; padding: 6px 12px; background: rgba(13,24,35,.6); border: 1px solid var(--line); }
+
+.facts { display: grid; grid-template-columns: max-content 1fr; gap: 6px 22px; margin: 0 0 22px; font-size: 15px; }
+.facts dt { color: var(--muted); }
+.facts dd { margin: 0; min-width: 0; }
+.facts dd .path, .facts dd small.path { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; direction: rtl; text-align: left; }
+.facts dd.ok::before, .facts dd.warn::before, .facts dd.bad::before { content: "●"; margin-right: 8px; font-size: 11px; vertical-align: 2px; }
+.facts dd.ok::before { color: var(--ok); }
+.facts dd.warn::before { color: var(--warn); }
+.facts dd.bad::before { color: var(--bad); }
+.facts dd small { display: block; color: var(--muted); font-size: 13px; }
+
+.notes { margin: 0 0 24px; padding: 0; list-style: none; color: var(--muted); font-size: 14px; max-width: 64ch; }
+.notes li { padding-left: 14px; position: relative; margin: 3px 0; }
+.notes li::before { content: ""; position: absolute; left: 0; top: .62em; width: 6px; height: 2px; background: var(--muted); }
+
+.actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 26px; }
+.btn {
+  height: 46px; padding: 0 20px; border: 1px solid var(--line); cursor: pointer;
+  background: rgba(21,36,51,.85); font-size: 16px; display: inline-flex; align-items: center; gap: 10px;
+}
+.btn:hover { border-color: var(--muted); }
+.btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.btn.primary {
+  height: 56px; padding: 0 34px; font-size: 22px; font-weight: 700; letter-spacing: .06em;
+  background: var(--accent); color: #0b1a27; border-color: transparent;
+}
+.btn.primary:hover { filter: brightness(1.08); }
+.btn[disabled] { opacity: .45; cursor: default; }
+/* controller face buttons: dark centre, coloured ring and letter */
+.glyph {
+  --c: #c9d6e2;
+  display: inline-grid; place-items: center; flex: none;
+  width: 26px; height: 26px; border-radius: 50%;
+  font-style: normal; font-size: 14px; font-weight: 700; line-height: 1;
+  color: var(--c); background: color-mix(in srgb, var(--c) 22%, #070b10);
+  box-shadow: inset 0 0 0 2.5px var(--c), 0 1px 3px rgba(0,0,0,.5);
+}
+.g-a { --c: #7cc243; } .g-b { --c: #e5403f; } .g-x { --c: #3d93e6; } .g-y { --c: #f2d23c; }
+.btn.primary .glyph { width: 30px; height: 30px; font-size: 16px; }
+
+/* ---------- footer hints ---------- */
+footer {
+  display: flex; gap: 30px; align-items: center; height: 64px; margin: 0 -44px; padding: 0 44px;
+  background: linear-gradient(0deg, rgba(5,10,15,.95), rgba(5,10,15,.7));
+  border-top: 1px solid var(--line); font-size: 16px; color: #e6eef5;
+}
+footer .hint { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+footer .hint b { font-weight: 600; margin-left: 2px; }
+footer .or { color: var(--muted); font-size: 13px; }
+kbd {
+  display: inline-grid; place-items: center; min-width: 30px; height: 28px; padding: 0 9px;
+  font: 600 14px/1 var(--font); color: #fff;
+  background: linear-gradient(180deg, #2a4057, #1b2c3d);
+  border: 1px solid #6f87a0; border-bottom-width: 3px; border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0,0,0,.45);
+}
+footer .right { margin-left: auto; }
+
+/* ---------- dialog & toast ---------- */
+.scrim {
+  position: fixed; inset: 0; z-index: 10; display: none; place-items: center;
+  background: rgba(3,8,12,.72); backdrop-filter: blur(3px);
+}
+.scrim.open { display: grid; }
+.dialog {
+  width: min(560px, calc(100vw - 32px)); background: var(--panel); border-top: 4px solid var(--select);
+  padding: 28px 30px 24px; box-shadow: 0 30px 80px rgba(0,0,0,.6);
+}
+.dialog h3 { margin: 0 0 8px; font-size: 28px; font-stretch: semi-condensed; }
+.dialog p { margin: 0 0 22px; color: #c3d1dd; }
+.dialog .actions { margin: 0; }
+.toast {
+  position: fixed; left: 50%; bottom: 74px; transform: translate(-50%, 20px); z-index: 20;
+  background: var(--panel); border-left: 4px solid var(--select); padding: 12px 18px; max-width: 80vw;
+  opacity: 0; transition: opacity 200ms ease, transform 200ms ease; pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.toast.err { border-left-color: var(--bad); }
+
+.progress { width: min(520px, 100%); margin-bottom: 26px; }
+.progress .bar { height: 10px; background: rgba(13,24,35,.75); border: 1px solid var(--line); overflow: hidden; }
+.progress .fill { height: 100%; width: 0; background: var(--accent); transition: width 300ms linear; }
+.progress .label { display: flex; justify-content: space-between; font-size: 15px; margin-bottom: 8px; }
+.progress .label span:last-child { color: var(--muted); }
+.progress.failed .fill { background: var(--bad); }
+.progress .err { color: var(--bad); margin: 10px 0 12px; font-size: 15px; }
+.notice {
+  max-width: 60ch; margin: 0 0 22px; padding: 12px 16px;
+  background: rgba(8,14,20,.82); border-left: 4px solid var(--warn); font-size: 17px; line-height: 1.4;
+}
+.notice b { font-weight: 700; color: #fff; }
+.dialog .notice { margin: 14px 0 0; font-size: 16px; }
+.minor { display: flex; gap: 14px; margin: -14px 0 22px; }
+.linkbtn { background: none; border: 0; padding: 0 4px; color: var(--muted); cursor: pointer; font-size: 14px; text-decoration: underline; text-underline-offset: 3px; }
+.linkbtn:hover { color: var(--text); }
+.row .tag.busy { color: var(--accent); }
+.dialog .path { display: block; margin-top: 10px; padding: 8px 12px; background: rgba(13,24,35,.7); border: 1px solid var(--line); font-size: 15px; color: var(--text); overflow-wrap: anywhere; }
+.loading { color: var(--muted); padding-top: 10vh; font-size: 18px; }
+
+@media (max-width: 1180px) { footer .or { display: none; } footer { gap: 18px; } }
+@media (max-width: 900px) {
+  .app { padding: 18px 16px 0; }
+  main { grid-template-columns: 1fr; gap: 24px; overflow: auto; }
+  footer { margin: 0 -16px; padding: 0 16px; gap: 14px; overflow-x: auto; }
+  .bigword { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="backdrop" id="backdrop"></div>
+<div class="art" id="artA" aria-hidden="true"></div>
+<div class="art" id="artB" aria-hidden="true"></div>
+<div class="shade" aria-hidden="true"></div>
+<div class="bigword" id="bigword" aria-hidden="true"></div>
+
+<div class="app">
+  <header>
+    <div class="brand"><img src="emblem.png?v=0.3.2" alt="">HALO MODDING COMMUNITY COLLECTION<small id="appver"></small></div>
+    <div class="hdr-right">
+      <button class="linkbtn" id="addShortcut" hidden>Add desktop shortcut</button>
+      <div class="now" id="now" hidden><span class="dot"></span><span>Playing <b id="nowName"></b></span></div>
+    </div>
+  </header>
+
+  <main>
+    <section class="list" aria-label="Games">
+      <h2>Choose a game</h2>
+      <div id="rows" role="listbox" aria-label="Games"></div>
+      <div class="footnote">
+        <p>Each game is built and updated by its own community team.</p>
+        <p class="legal">Halo: Combat Evolved, Halo 2, Halo 3 and Halo: Reach © Microsoft Corporation. Halo Modding Community Collection was created under Microsoft's <button class="linkbtn" id="rules">"Game Content Usage Rules"</button> using assets from Halo: Combat Evolved, Halo 2, Halo 3 and Halo: Reach, and it is not endorsed by or affiliated with Microsoft.</p>
+      </div>
+    </section>
+    <section class="detail" id="detail" aria-live="polite"><div class="loading">Finding your games…</div></section>
+  </main>
+
+  <footer>
+    <span class="hint"><i class="glyph g-a">A</i><span class="or">or</span><kbd>Enter</kbd><b>Play</b></span>
+    <span class="hint"><i class="glyph g-x">X</i><span class="or">or</span><kbd>F</kbd><b>Game folder</b></span>
+    <span class="hint"><i class="glyph g-y">Y</i><span class="or">or</span><kbd>P</kbd><b>Project page</b></span>
+    <span class="hint"><i class="glyph g-b">B</i><span class="or">or</span><kbd>Esc</kbd><b>Back</b></span>
+    <span class="hint right" id="padState"><kbd>↑</kbd><kbd>↓</kbd><b>Choose</b></span>
+  </footer>
+</div>
+
+<div class="scrim" id="scrim" role="dialog" aria-modal="true" aria-labelledby="dlgTitle">
+  <div class="dialog">
+    <h3 id="dlgTitle"></h3>
+    <p id="dlgBody"></p>
+    <div class="actions">
+      <button class="btn primary" id="dlgOk"><i class="glyph g-a">A</i><span id="dlgOkText"></span></button>
+      <button class="btn" id="dlgAlt" hidden></button>
+      <button class="btn" id="dlgCancel"><i class="glyph g-b">B</i>Cancel</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const TOKEN = new URLSearchParams(location.search).get("t") || "";
+const BIG = { reach: "REACH", ce: "CE", h2: "2", h3: "3" };
+let state = null, sel = 0, busy = false, dialogOk = null, dialogAlt = null, dialogCancel = null;
+let shortcutOffered = false;
+let artShown = null, artLayer = 0;
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+async function api(path, body) {
+  const r = await fetch("/api/" + path, {
+    method: body ? "POST" : "GET",
+    headers: { "X-HCC-Token": TOKEN, "Content-Type": "application/json" },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  let data = {};
+  try { data = await r.json(); } catch (e) {}
+  return { status: r.status, data };
+}
+
+function toast(msg, err) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.className = "toast show" + (err ? " err" : "");
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => (t.className = "toast" + (err ? " err" : "")), 3800);
+}
+
+function game() { return state && state.games[sel]; }
+function byId(id) { return state.games.find(g => g.id === id); }
+
+function rowTag(g) {
+  const j = state.job;
+  if (j && j.id === g.id && !j.finished) return ['<span class="tag busy">Installing ' + pct(j) + "%</span>"];
+  if (g.running) return ['<span class="tag live">Playing</span>'];
+  if (g.installed) return ['<span class="tag">' + (g.version ? "v" + esc(g.version) : "Ready") + "</span>"];
+  if (g.closedBeta) return ['<span class="tag beta">Closed beta</span>'];
+  return ['<span class="tag">' + (g.canInstall ? "Not installed" : "Not set up") + "</span>"];
+}
+
+function renderRows() {
+  $("rows").innerHTML = state.games.map((g, i) => `
+    <button class="row" role="option" id="row-${g.id}" data-i="${i}" aria-selected="${i === sel}" style="--row-accent:${g.accent}">
+      <span><div class="t">${esc(g.title)}</div><div class="p">${esc(g.project)}</div></span>
+      ${rowTag(g).join("")}
+    </button>`).join("");
+  document.querySelectorAll(".row").forEach(b => {
+    b.onclick = () => select(+b.dataset.i);
+    b.ondblclick = () => play();
+  });
+}
+
+function pct(j) { return j.total > 0 ? Math.min(100, Math.floor(j.done * 100 / j.total)) : 0; }
+const MB = (n) => (n / 1048576).toFixed(n > 104857600 ? 0 : 1);
+
+function showArt(url) {
+  if (url === artShown) return;
+  artShown = url;
+  document.body.classList.toggle("has-art", !!url);
+  const layers = [$("artA"), $("artB")];
+  const next = layers[artLayer ^ 1], cur = layers[artLayer];
+  if (!url) { cur.classList.remove("on"); next.classList.remove("on"); return; }
+  const full = url + (url.includes("?") ? "&" : "?") + "t=" + encodeURIComponent(TOKEN);
+  const img = new Image();
+  img.onload = () => {
+    if (artShown !== url) return;
+    next.style.backgroundImage = `url("${full}")`;
+    next.classList.add("on");
+    cur.classList.remove("on");
+    artLayer ^= 1;
+  };
+  img.src = full;
+}
+
+function progressHTML(g, j) {
+  const phase = { downloading: "Downloading", checking: "Checking the download", unpacking: "Unpacking", failed: "Install failed", done: "Installed" }[j.phase] || j.phase;
+  const amount = j.phase === "downloading" && j.total ? `${MB(j.done)} / ${MB(j.total)} MB` : (j.version || "");
+  return `<div class="progress ${j.phase === "failed" ? "failed" : ""}">
+    <div class="label"><span>${esc(phase)}${j.phase === "downloading" ? " " + esc(j.version || "") : ""}</span><span>${esc(amount)}</span></div>
+    <div class="bar"><div class="fill" style="width:${j.phase === "downloading" ? pct(j) : 100}%"></div></div>
+    ${j.error ? `<div class="err">${esc(j.error.charAt(0).toUpperCase() + j.error.slice(1))}.</div>` : ""}
+    ${j.phase === "failed" ? `<div class="actions"><button class="btn primary" id="retry"><i class="glyph g-a">A</i>TRY AGAIN</button><button class="btn" id="dismiss">Dismiss</button></div>` : ""}
+  </div>`;
+}
+
+function relDate(iso) {
+  if (!iso || iso.startsWith("0001")) return "";
+  const d = new Date(iso);
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+}
+
+function renderDetail() {
+  const g = game();
+  document.documentElement.style.setProperty("--accent", g.accent);
+  showArt(g.art);
+  const j = state.job && state.job.id === g.id ? state.job : null;
+  const big = $("bigword");
+  if (big.textContent !== BIG[g.id]) {
+    big.classList.add("swap");
+    setTimeout(() => { big.textContent = BIG[g.id]; big.classList.remove("swap"); }, 160);
+  }
+
+  const facts = [];
+  if (g.installed) {
+    facts.push(["Installed", `<dd class="ok">${esc(g.exeName)}<small class="path" title="${esc(g.path)}">${esc(g.path)}</small></dd>`]);
+    facts.push(["Version", `<dd>${g.version ? "v" + esc(g.version) : "Updates itself when it starts"}${g.updateMsg ? `<small>${esc(g.updateMsg)}</small>` : ""}</dd>`]);
+  } else if (g.canInstall) {
+    facts.push(["Status", `<dd class="warn">Not installed<small>Install downloads the latest release from the project's GitHub page. Already have it? Choose its folder instead.</small></dd>`]);
+  } else if (g.closedBeta) {
+    facts.push(["Status", `<dd class="warn">Closed beta<small>Not downloadable yet. Once you have it, choose its folder here.</small></dd>`]);
+  } else {
+    facts.push(["Status", `<dd class="bad">Not set up<small>${g.path ? "Couldn't find the game in " + esc(g.path) + "." : "Download it from the project page, unzip it, then choose its folder here."}</small></dd>`]);
+  }
+  if (g.latest) {
+    facts.push(["Latest release", `<dd>${esc(g.latest.tag)}<small>${esc(relDate(g.latest.published))}</small></dd>`]);
+  }
+  for (const c of g.checks || []) {
+    facts.push([esc(c.label), `<dd class="${c.ok ? "ok" : c.warn ? "warn" : "bad"}">${c.ok ? "Found" : "Check"}${c.detail ? `<small class="${c.ok ? "path" : ""}" title="${esc(c.detail)}">${esc(c.detail)}</small>` : ""}</dd>`]);
+  }
+
+  const other = state.running && state.running !== g.id ? byId(state.running) : null;
+  let playLabel = "PLAY", playDisabled = false;
+  if (g.running) playLabel = "RETURN TO GAME";
+  else if (other) playLabel = "SWITCH TO " + g.short.toUpperCase();
+  if (!g.installed) { playLabel = g.closedBeta ? "CLOSED BETA" : g.canInstall ? "INSTALL" : "NOT SET UP"; playDisabled = !g.canInstall; }
+  const installing = j && !j.finished;
+
+  $("detail").innerHTML = `
+    <div class="year">${esc(g.year)}</div>
+    <h1>${esc(g.title)}</h1>
+    <div class="by">${esc(g.project)}</div>
+    <p class="tagline">${esc(g.tagline)}</p>
+    ${g.requires && (!g.installed || (g.checks || []).some(c => c.warn)) ? `<p class="notice"><b>${esc(g.requires)}</b></p>` : ""}
+    ${j ? progressHTML(g, j) : ""}
+    <div class="actions" ${installing || (j && j.phase === "failed") ? "hidden" : ""}>
+      <button class="btn primary" id="play" ${playDisabled ? "disabled" : ""}><i class="glyph g-a">A</i>${esc(playLabel)}</button>
+      ${g.running ? `<button class="btn" id="quit"><i class="glyph g-b">B</i>Close game</button>` : ""}
+      <button class="btn" id="pick">${g.installed ? "Change folder" : "Choose folder"}</button>
+      ${g.installed ? `<button class="btn" id="folder"><i class="glyph g-x">X</i>Open folder</button>` : ""}
+      <button class="btn" id="page"><i class="glyph g-y">Y</i>${g.installed ? "Project page" : "Get it"}</button>
+      ${g.communityUrl ? `<button class="btn" id="community">Community</button>` : ""}
+    </div>
+    <div class="minor">
+      <button class="linkbtn" id="bg">${g.art ? "Change background" : "Add background"}</button>
+      ${g.artCustom ? `<button class="linkbtn" id="bgclear">Remove background</button>` : ""}
+    </div>
+    <ul class="chips">${g.highlights.map(h => `<li>${esc(h)}</li>`).join("")}</ul>
+    <dl class="facts">${facts.map(([k, v]) => `<dt>${k}</dt>${v}`).join("")}</dl>
+    <ul class="notes">${g.notes.map(n => `<li>${esc(n)}</li>`).join("")}</ul>
+`;
+  $("play").onclick = () => play();
+  $("bg").onclick = pickArt;
+  if ($("bgclear")) $("bgclear").onclick = async () => { await api("art-clear", { id: g.id }); refresh(); };
+  if ($("retry")) $("retry").onclick = async () => { await api("install-dismiss"); askInstall(g, j.dir); };
+  if ($("dismiss")) $("dismiss").onclick = async () => { await api("install-dismiss"); refresh(); };
+  $("pick").onclick = pick;
+  $("page").onclick = () => openUrl(g.installed ? g.projectUrl : g.downloadUrl);
+  if ($("folder")) $("folder").onclick = folder;
+  if ($("quit")) $("quit").onclick = () => closeGame(g.id);
+  if ($("community")) $("community").onclick = () => openUrl(g.communityUrl);
+
+  const now = state.running ? byId(state.running) : null;
+  $("now").hidden = !now;
+  if (now) $("nowName").textContent = now.title;
+}
+
+function render() {
+  $("appver").textContent = "v" + state.version;
+  renderRows();
+  renderDetail();
+}
+
+function select(i) {
+  if (!state) return;
+  sel = (i + state.games.length) % state.games.length;
+  document.querySelectorAll(".row").forEach((b, j) => b.setAttribute("aria-selected", j === sel));
+  const row = document.querySelectorAll(".row")[sel];
+  if (row && document.activeElement && document.activeElement.classList.contains("row")) row.focus();
+  renderDetail();
+}
+
+async function refresh() {
+  const r = await api("state");
+  if (r.status !== 200) return;
+  clearTimeout(refresh.fast);
+  if (r.data.job && !r.data.job.finished) refresh.fast = setTimeout(refresh, 500);
+  const sig = JSON.stringify(r.data);
+  if (sig === refresh.last) return;
+  refresh.last = sig;
+  const first = !state;
+  const keep = state ? game().id : null;
+  state = r.data;
+  if (first) {
+    const lp = state.games.findIndex(g => g.id === (state.running || state.lastPlayed));
+    sel = lp >= 0 ? lp : Math.max(0, state.games.findIndex(g => g.installed));
+  } else if (keep) {
+    sel = Math.max(0, state.games.findIndex(g => g.id === keep));
+  }
+  const j = state.job;
+  if (j && j.finished && j.phase === "done") {
+    toast(byId(j.id).project + " installed" + (j.verified ? " and checked against the project's checksum." : "."));
+    api("install-dismiss");
+  }
+  if (!dialogOpen()) render();
+  const sc = state.shortcut;
+  $("addShortcut").hidden = !sc || sc.exists || sc.inTemp;
+  if (first) setTimeout(offerShortcut, 900);
+}
+
+// ---------- actions ----------
+async function play(replace) {
+  const g = game();
+  if (g && !g.installed && g.canInstall) { askInstall(g); return; }
+  if (!g || !g.installed || busy) return;
+  busy = true;
+  if (!g.running) toast(replace ? "Closing " + byId(state.running).short + "…" : "Starting " + g.title + "…");
+  const r = await api("launch", { id: g.id, replace: !!replace });
+  busy = false;
+  if (r.status === 409) {
+    const other = byId(r.data.running);
+    confirmDialog(
+      "Switch to " + g.title + "?",
+      other.title + " is running. It will be closed first, so anything you haven't saved there will be lost.",
+      "Close " + other.short + " and play",
+      () => play(true));
+    return;
+  }
+  if (r.status !== 200) { toast(r.data.error || "Couldn't start the game.", true); }
+  else if (r.data.status === "already running") toast(g.title + " is already running.");
+  else toast(g.title + " started.");
+  refresh();
+}
+
+function closeGame(id) {
+  const g = byId(id);
+  confirmDialog("Close " + g.title + "?", "Anything you haven't saved will be lost.", "Close game", async () => {
+    toast("Closing " + g.short + "…");
+    const r = await api("close", { id });
+    toast(r.status === 200 ? g.title + " closed." : (r.data.error || "Couldn't close the game."), r.status !== 200);
+    refresh();
+  });
+}
+
+const NEEDS = {
+  reach: "You'll also need MCC on Steam with Halo: Reach installed.",
+  ce: "You'll also need your own Halo: Combat Evolved Xbox disc image (.iso).",
+  h3: "You'll also need MCC on Steam with Halo 3 installed.",
+};
+
+function askInstall(g, dir) {
+  const j = state.job;
+  if (j && !j.finished) { toast("Wait for the current install to finish.", true); return; }
+  dir = dir || g.suggestDir;
+  confirmDialog("Install " + g.project + "?", "", "Install here", () => install(g, dir), {
+    text: "Choose another folder",
+    fn: async () => {
+      const r = await api("install-pick", { id: g.id });
+      if (r.status !== 200) { toast(r.data.error || "Couldn't open the folder picker.", true); return; }
+      askInstall(g, r.data.status === "ok" ? r.data.dir : dir);
+    },
+  });
+  $("dlgBody").innerHTML = `Downloads the latest release from ${esc(g.project)}'s GitHub page into:<span class="path">${esc(dir)}</span>` +
+    (g.requires ? `<span class="notice" style="display:block"><b>${esc(g.requires)}</b></span>` : `<br>${esc(NEEDS[g.id] || "")}`);
+}
+
+async function install(g, dir) {
+  const r = await api("install", { id: g.id, dir });
+  if (r.status !== 200) { toast(r.data.error || "Couldn't start the install.", true); return; }
+  toast("Installing " + g.project + "…");
+  refresh();
+}
+
+async function addShortcut() {
+  const r = await api("shortcut", { value: true });
+  if (r.status === 200) toast("Shortcut added to your desktop.");
+  else toast(r.data.error || "Couldn't add the shortcut.", true);
+  refresh.last = null; refresh();
+}
+
+function offerShortcut() {
+  const sc = state.shortcut;
+  if (shortcutOffered || !sc || sc.asked || sc.exists || dialogOpen()) return;
+  shortcutOffered = true;
+  if (sc.inTemp) {
+    confirmDialog("Move the launcher first",
+      "It looks like the launcher was opened straight from a zip or a temporary folder, which Windows may clear. Move Halo-Modding-Community-Collection.exe to your Desktop or a Games folder, then open it from there.",
+      "Got it", () => {});
+    return;
+  }
+  confirmDialog("Add a shortcut to your desktop?",
+    "So you can open Halo: MCC straight from your desktop next time." +
+      (sc.downloads ? " The launcher is in your Downloads folder right now. If you'd like it somewhere else, move it first, then use \"Add desktop shortcut\" at the top right." : ""),
+    "Add shortcut", addShortcut, null,
+    { text: "No thanks", fn: async () => { await api("shortcut", { value: false }); refresh.last = null; refresh(); } });
+}
+
+async function pickArt() {
+  const g = game();
+  toast("Choose an image in the window that opened.");
+  const r = await api("art-pick", { id: g.id });
+  if (r.status !== 200) toast(r.data.error || "Couldn't set the background.", true);
+  else if (r.data.status === "ok") toast("Background saved.");
+  refresh();
+}
+
+async function pick() {
+  const g = game();
+  toast("Choose the " + g.project + " folder in the window that opened.");
+  const r = await api("pick", { id: g.id });
+  if (r.status !== 200) toast(r.data.error || "Couldn't set the folder.", true);
+  else if (r.data.status === "ok") toast(g.project + " folder saved.");
+  refresh();
+}
+
+async function folder() {
+  const g = game();
+  if (!g.installed) return;
+  await api("folder", { id: g.id });
+}
+
+async function openUrl(url) {
+  if (url) await api("open-url", { url });
+}
+
+// ---------- dialog ----------
+function dialogOpen() { return $("scrim").classList.contains("open"); }
+function confirmDialog(title, body, okText, onOk, alt, cancel) {
+  dialogCancel = cancel ? cancel.fn : null;
+  $("dlgCancel").innerHTML = '<i class="glyph g-b">B</i>' + esc(cancel ? cancel.text : "Cancel");
+  $("dlgTitle").textContent = title;
+  $("dlgBody").textContent = body;
+  $("dlgOkText").textContent = okText;
+  dialogOk = onOk;
+  dialogAlt = alt ? alt.fn : null;
+  $("dlgAlt").hidden = !alt;
+  if (alt) $("dlgAlt").innerHTML = '<i class="glyph g-x">X</i>' + esc(alt.text);
+  $("scrim").classList.add("open");
+  $("dlgOk").focus();
+}
+function closeDialog() { $("scrim").classList.remove("open"); dialogOk = null; dialogAlt = null; dialogCancel = null; if (state) render(); }
+$("dlgAlt").onclick = () => { const f = dialogAlt; closeDialog(); f && f(); };
+$("dlgOk").onclick = () => { const f = dialogOk; closeDialog(); f && f(); };
+$("dlgCancel").onclick = () => { const f = dialogCancel; dialogCancel = null; closeDialog(); f && f(); };
+$("addShortcut").onclick = addShortcut;
+$("rules").onclick = () => openUrl("https://www.xbox.com/en-US/developers/rules");
+
+// ---------- input: keyboard ----------
+function act(button) {
+  if (dialogOpen()) {
+    if (button === "a") $("dlgOk").click();
+    if (button === "b") $("dlgCancel").click();
+    if (button === "x" && dialogAlt) $("dlgAlt").click();
+    return;
+  }
+  const g = game();
+  if (!g) return;
+  switch (button) {
+    case "up": select(sel - 1); break;
+    case "down": select(sel + 1); break;
+    case "a": play(); break;
+    case "x": folder(); break;
+    case "y": openUrl(g.installed ? g.projectUrl : g.downloadUrl); break;
+    case "b": if (g.running) closeGame(g.id); break;
+  }
+}
+document.addEventListener("keydown", (e) => {
+  const inDialog = dialogOpen();
+  const k = e.key;
+  if (k === "ArrowUp") { e.preventDefault(); act("up"); }
+  else if (k === "ArrowDown") { e.preventDefault(); act("down"); }
+  else if (k === "Escape") { act("b"); }
+  else if (k === "Enter" && !inDialog && (document.activeElement === document.body || document.activeElement.classList.contains("row"))) { e.preventDefault(); act("a"); }
+  else if (k === "f" || k === "F") act("x");
+  else if ((k === "p" || k === "P") && !inDialog) act("y");
+});
+
+// ---------- input: controller ----------
+const prev = {};
+let repeatAt = 0;
+function pollPad() {
+  const pads = navigator.getGamepads ? [...navigator.getGamepads()].filter(Boolean) : [];
+  const p = pads[0];
+  const padMsg = p ? "Controller connected" : "";
+  if (pollPad.last !== padMsg) {
+    pollPad.last = padMsg;
+    $("padState").innerHTML = (p ? '<i class="glyph">✚</i>' : "<kbd>↑</kbd><kbd>↓</kbd>") + "<b>" + "Choose" + "</b>";
+  }
+  if (p && document.hasFocus()) {
+    const b = (i) => p.buttons[i] && p.buttons[i].pressed;
+    const axis = p.axes[1] || 0;
+    const down = b(13) || axis > 0.6, up = b(12) || axis < -0.6;
+    const now = performance.now();
+    const map = { a: b(0), b: b(1), x: b(2), y: b(3) };
+    for (const [name, pressed] of Object.entries(map)) {
+      if (pressed && !prev[name]) act(name);
+      prev[name] = pressed;
+    }
+    if ((up || down) && (!prev.dir || now > repeatAt)) {
+      act(up ? "up" : "down");
+      repeatAt = now + (prev.dir ? 140 : 380);
+    }
+    prev.dir = up || down;
+  }
+  requestAnimationFrame(pollPad);
+}
+requestAnimationFrame(pollPad);
+
+// ---------- loop ----------
+refresh();
+setInterval(refresh, 3000);
+setInterval(() => api("ping"), 5000);
+</script>
+</body>
+</html>

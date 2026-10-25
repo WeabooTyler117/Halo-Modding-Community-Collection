@@ -1,0 +1,49 @@
+name: Something's not working
+description: The launcher or a game won't start, install, switch, or looks wrong.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for letting us know! Fill in what you can. Nothing here needs coding knowledge.
+        **Everything you post here is public.** Don't include passwords, emails or personal info.
+        Found a **security** problem? Don't post it here. Use the Security tab, then "Report a vulnerability".
+        **Problem with a game itself** (crashes in a match, missing maps)? Those are best reported to that game's own team. Links are on the main page under Credits.
+  - type: dropdown
+    id: game
+    attributes:
+      label: Which game?
+      options:
+        - The launcher itself
+        - "Halo: Reach (Reach Renaissance)"
+        - "Halo: Combat Evolved (OpenCE)"
+        - "Halo 2 (Project Gravemind)"
+        - "Halo 3 (Project Reclaimer)"
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you click, and what went wrong?
+      placeholder: I pressed Install on Halo 3 and it said...
+    validations:
+      required: true
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Screenshot (optional)
+      description: Press Win + Shift + S to take one, then paste it here.
+  - type: input
+    id: version
+    attributes:
+      label: Launcher version
+      description: Top-left of the launcher, next to the name (for example v0.3.2).
+  - type: textarea
+    id: log
+    attributes:
+      label: Launcher log (optional)
+      description: |
+        Press Win + R, paste `%APPDATA%\HaloCommunityCollection` and press Enter. Open `launcher.log` and paste it here.
+        Folder paths in the log can include your Windows user name. Replace it with `USER` before posting if you like.
+      render: text

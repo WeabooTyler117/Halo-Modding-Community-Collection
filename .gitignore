@@ -1,0 +1,4 @@
+# Built programs go in GitHub Releases, not in the code
+*.exe
+dist/
+brand/*.res

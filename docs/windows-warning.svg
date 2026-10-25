@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="250" viewBox="0 0 720 250">
+  <!-- Step A: the warning as it first appears -->
+  <rect x="10" y="10" width="330" height="230" rx="4" fill="#0063b1"/>
+  <text x="30" y="52" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="600" fill="#fff">Windows protected your PC</text>
+  <text x="30" y="84" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#dbe9f6">Microsoft Defender SmartScreen prevented</text>
+  <text x="30" y="102" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#dbe9f6">an unrecognized app from starting...</text>
+  <text x="30" y="134" font-family="Segoe UI, Arial, sans-serif" font-size="15" fill="#fff" text-decoration="underline">More info</text>
+  <rect x="20" y="114" width="92" height="30" rx="15" fill="none" stroke="#ffd23c" stroke-width="4"/>
+  <rect x="236" y="196" width="92" height="32" fill="#cfd9e3"/>
+  <text x="262" y="217" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#333">Don't run</text>
+  <text x="124" y="136" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="700" fill="#ffd23c">1. Click this</text>
+  <!-- arrow -->
+  <path d="M350 125 h22 l-8 -8 M372 125 l-8 8" stroke="#7f93a6" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <!-- Step B: after More info -->
+  <rect x="380" y="10" width="330" height="230" rx="4" fill="#0063b1"/>
+  <text x="400" y="52" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="600" fill="#fff">Windows protected your PC</text>
+  <text x="400" y="84" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#dbe9f6">App: Halo-Modding-Community-Collection.exe</text>
+  <text x="400" y="102" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#dbe9f6">Publisher: Unknown publisher</text>
+  <rect x="494" y="196" width="104" height="32" fill="#cfd9e3"/>
+  <text x="509" y="217" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#333">Run anyway</text>
+  <rect x="488" y="190" width="116" height="44" rx="6" fill="none" stroke="#ffd23c" stroke-width="4"/>
+  <rect x="610" y="196" width="92" height="32" fill="#cfd9e3"/>
+  <text x="636" y="217" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#333">Don't run</text>
+  <text x="440" y="160" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="700" fill="#ffd23c">2. Then click "Run anyway"</text>
+</svg>

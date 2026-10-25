@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: "Halo: Reach help (Reach Renaissance)"
+    url: https://github.com/NETF1ix/reach-renaissance-releases
+    about: Problems inside Halo: Reach itself.
+  - name: "Halo: Combat Evolved help (OpenCE Discord)"
+    url: https://discord.gg/9gqcHyr5km
+    about: Problems inside Halo CE itself.
+  - name: "Halo 3 help (Project Reclaimer)"
+    url: https://projectreclaimer.dev
+    about: Problems inside Halo 3 itself.
