@@ -84,6 +84,7 @@ func pickImage(title string) (string, error) {
 }
 func showError(title, msg string)          { println(title + ": " + msg) }
 func openWindow(url string) (func(), bool) { println(url); return nil, false }
+func closeWindow()                         {}
 
 // Shortcut stand-ins for tests: a plain text file holding the target path.
 func desktopDir() string {

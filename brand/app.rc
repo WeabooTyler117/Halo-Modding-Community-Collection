@@ -1,8 +1,8 @@
 1 ICON "app.ico"
 1 24 "app.manifest"
 1 VERSIONINFO
-FILEVERSION 0,3,3,0
-PRODUCTVERSION 0,3,3,0
+FILEVERSION 0,3,4,0
+PRODUCTVERSION 0,3,4,0
 BEGIN
   BLOCK "StringFileInfo"
   BEGIN
@@ -10,9 +10,9 @@ BEGIN
     BEGIN
       VALUE "CompanyName", "Halo community"
       VALUE "FileDescription", "Halo Modding Community Collection (Halo: MCC) launcher"
-      VALUE "FileVersion", "0.3.3"
+      VALUE "FileVersion", "0.3.4"
       VALUE "ProductName", "Halo Modding Community Collection"
-      VALUE "ProductVersion", "0.3.3"
+      VALUE "ProductVersion", "0.3.4"
       VALUE "LegalCopyright", "Fan project. Not affiliated with Microsoft, Halo Studios or Bungie."
       VALUE "OriginalFilename", "Halo Modding Community Collection.exe"
     END

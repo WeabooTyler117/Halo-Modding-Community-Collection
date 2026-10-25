@@ -25,10 +25,12 @@ import (
 var uiFS embed.FS
 
 const (
-	appName    = "Halo Modding Community Collection"
-	appVersion = "0.3.3"
-	port       = 47231
+	appName = "Halo Modding Community Collection"
+	port    = 47231
 )
+
+// appVersion is a var so test builds can set it with -ldflags -X main.appVersion=...
+var appVersion = "0.3.4"
 
 // ---------- config ----------
 
@@ -468,6 +470,7 @@ func buildState() map[string]any {
 		"lastPlayed": last,
 		"job":        currentJob(),
 		"shortcut":   shortcutState(),
+		"update":     updateState(),
 	}
 }
 
@@ -609,6 +612,9 @@ func allowedURL(u string) bool {
 				return true
 			}
 		}
+		if strings.HasPrefix(u, "https://github.com/"+selfRepo+"/releases/") {
+			return true
+		}
 		if g.Repo != "" && strings.HasPrefix(u, "https://github.com/"+g.Repo+"/") {
 			return true
 		}
@@ -746,6 +752,7 @@ func routes() *http.ServeMux {
 	}))
 	registerExtraRoutes(mux)
 	registerShortcutRoutes(mux)
+	registerUpdateRoutes(mux)
 	return mux
 }
 
@@ -756,7 +763,15 @@ func main() {
 	}
 	sessionFile := filepath.Join(dataDir(), "session")
 
-	ln, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+	addr := fmt.Sprintf("127.0.0.1:%d", port)
+	ln, err := net.Listen("tcp", addr)
+	if err != nil && hasArg(afterUpdateF) {
+		// Started by an update: the old version is still letting go of the port.
+		for i := 0; i < 40 && err != nil; i++ {
+			time.Sleep(250 * time.Millisecond)
+			ln, err = net.Listen("tcp", addr)
+		}
+	}
 	if err != nil {
 		// Already running: open another window on the running launcher.
 		if b, e := os.ReadFile(sessionFile); e == nil {
@@ -770,6 +785,11 @@ func main() {
 		return
 	}
 
+	if hasArg(afterUpdateF) {
+		justUpdated = true
+	}
+	go cleanupAfterUpdate()
+
 	token = newToken()
 	os.WriteFile(sessionFile, []byte(token), 0o600)
 	loadConfig()
@@ -777,6 +797,7 @@ func main() {
 	autoDetect()
 	adoptArt()
 	checkShortcut()
+	getRelease(selfRepo)
 	for _, g := range games {
 		if g.Repo != "" {
 			getRelease(g.Repo)

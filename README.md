@@ -88,7 +88,7 @@ Picking another game while one is running asks first, then closes the first game
 Yes. Click **Add desktop shortcut** at the top right of the launcher.
 
 **How do I update the launcher?**
-Click the DOWNLOAD button again and replace your old file with the new one. Your settings stay. The games themselves keep updating on their own, the same way they always do.
+From v0.3.4 on, the launcher tells you when a new version is out: click **Update now** in the bar at the top and it updates and restarts itself. Your settings stay. On v0.3.3 or older, click the DOWNLOAD button again and replace your old file with the new one. The games themselves keep updating on their own, the same way they always do.
 
 **Is it safe?**
 The launcher never includes or changes any game files, and it never asks for passwords or logins. It only finds the games you have, starts them, and downloads each game from that project's own GitHub page when you press Install. All of its code is in this repository for anyone to read, and each release lists a SHA-256 checksum so you can check your download. More in [SECURITY.md](SECURITY.md).

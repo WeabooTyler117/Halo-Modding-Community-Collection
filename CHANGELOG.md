@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.3.4
+- New: the launcher updates itself. When a new version is out, a bar at the top says so. Click **Update now** and it downloads the new version from this repository's Releases page, checks it against the release's SHA-256 checksum, and restarts. Nothing changes unless you click. (Coming from v0.3.3? Download v0.3.4 by hand this one time; after that it's automatic.)
+- New background art for Halo: Reach and Halo 3.
+- Tall posters now show the whole character instead of being cut off.
+
 ## v0.3.3
 - New: on first launch the launcher offers to add a desktop shortcut (it only adds one if you say yes). If you move the launcher later, the shortcut follows it.
 - Security: "Remove background" can only ever remove the launcher's own background files.

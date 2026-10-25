@@ -8,7 +8,9 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
+	"time"
 	"unsafe"
 )
 
@@ -252,7 +254,28 @@ func openWindow(url string) (func(), bool) {
 		openURL(url)
 		return nil, false
 	}
+	windowMu.Lock()
+	windowCmd = cmd
+	windowMu.Unlock()
 	return func() { cmd.Wait() }, true
+}
+
+var (
+	windowMu  sync.Mutex
+	windowCmd *exec.Cmd
+)
+
+// closeWindow ends our app window's browser process (used before restarting
+// into an updated launcher, which opens a fresh window).
+func closeWindow() {
+	windowMu.Lock()
+	cmd := windowCmd
+	windowMu.Unlock()
+	if cmd == nil || cmd.Process == nil {
+		return
+	}
+	closeProcesses([]int{cmd.Process.Pid}, true)
+	time.Sleep(500 * time.Millisecond)
 }
 
 // ---------- desktop shortcut ----------

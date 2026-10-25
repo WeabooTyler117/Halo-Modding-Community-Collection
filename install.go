@@ -215,7 +215,14 @@ func runInstall(g *GameDef, dir string) {
 		}
 	}()
 	part := filepath.Join(dir, ".hcc-download.part")
-	got, err := download(asset.URL, part)
+	got, err := download(asset.URL, part, maxDownload, func(done, total int64) {
+		setJob(func(j *InstallJob) {
+			j.Done = done
+			if total > 0 {
+				j.Total = total
+			}
+		})
+	})
 	if err != nil {
 		os.Remove(part)
 		fail(err)
@@ -279,16 +286,22 @@ func expectedHash(url, name string) string {
 	return ""
 }
 
-type progressWriter struct{ n int64 }
+type progressWriter struct {
+	n, total   int64
+	onProgress func(done, total int64)
+}
 
 func (p *progressWriter) Write(b []byte) (int, error) {
 	p.n += int64(len(b))
-	n := p.n
-	setJob(func(j *InstallJob) { j.Done = n })
+	if p.onProgress != nil {
+		p.onProgress(p.n, p.total)
+	}
 	return len(b), nil
 }
 
-func download(url, dest string) (string, error) {
+// download saves url to dest and returns its SHA-256. It stops past max
+// bytes. onProgress (may be nil) hears how far it has got.
+func download(url, dest string, max int64, onProgress func(done, total int64)) (string, error) {
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Set("User-Agent", "HaloModdingCommunityCollection/"+appVersion)
 	resp, err := httpClient.Do(req)
@@ -299,19 +312,24 @@ func download(url, dest string) (string, error) {
 	if resp.StatusCode != 200 {
 		return "", fmt.Errorf("the download failed (GitHub answered %d)", resp.StatusCode)
 	}
-	if resp.ContentLength > maxDownload {
-		return "", errors.New("the download is larger than any game release should be, so it was stopped")
+	if resp.ContentLength > max {
+		return "", errors.New("the download is larger than it should be, so it was stopped")
 	}
+	total := int64(0)
 	if resp.ContentLength > 0 {
-		setJob(func(j *InstallJob) { j.Total = resp.ContentLength })
+		total = resp.ContentLength
 	}
 	f, err := os.Create(dest)
 	if err != nil {
+		if errors.Is(err, os.ErrPermission) {
+			return "", errors.New("access denied: " + err.Error())
+		}
 		return "", err
 	}
 	h := sha256.New()
-	n, err := io.Copy(io.MultiWriter(f, h, &progressWriter{}), io.LimitReader(resp.Body, maxDownload+1))
-	if err == nil && n > maxDownload {
+	pw := &progressWriter{total: total, onProgress: onProgress}
+	n, err := io.Copy(io.MultiWriter(f, h, pw), io.LimitReader(resp.Body, max+1))
+	if err == nil && n > max {
 		err = errors.New("too large")
 	}
 	if cerr := f.Close(); err == nil {

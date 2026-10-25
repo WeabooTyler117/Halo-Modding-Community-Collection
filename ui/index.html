@@ -64,6 +64,13 @@ button { font: inherit; color: inherit; }
   opacity: 0; transition: opacity 600ms ease;
 }
 .art.on { opacity: 1; }
+/* tall posters: show the whole height, anchored right, with the left edge faded out */
+.art.tall {
+  left: auto; width: auto; aspect-ratio: var(--ar);
+  background-size: cover; background-position: center top;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 28%);
+          mask-image: linear-gradient(90deg, transparent 0%, #000 28%);
+}
 .shade {
   position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0; transition: opacity 600ms ease;
   background:
@@ -244,6 +251,18 @@ footer .right { margin-left: auto; }
 .row .tag.busy { color: var(--accent); }
 .dialog .path { display: block; margin-top: 10px; padding: 8px 12px; background: rgba(13,24,35,.7); border: 1px solid var(--line); font-size: 15px; color: var(--text); overflow-wrap: anywhere; }
 .loading { color: var(--muted); padding-top: 10vh; font-size: 18px; }
+.updbar {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  margin: 0 0 14px; padding: 10px 16px;
+  background: rgba(8,14,20,.88); border-left: 4px solid var(--ok); font-size: 17px;
+}
+.updbar[hidden] { display: none; }
+.updbar.err { border-left-color: var(--bad); }
+.updbar .msg { flex: 1 1 auto; }
+.updbar .msg b { color: #fff; }
+.updbar .btn { padding-top: 6px; padding-bottom: 6px; }
+.updbar .bar { flex: 0 0 180px; height: 8px; background: rgba(13,24,35,.75); border: 1px solid var(--line); overflow: hidden; }
+.updbar .fill { height: 100%; width: 0; background: var(--ok); transition: width 300ms linear; }
 
 @media (max-width: 1180px) { footer .or { display: none; } footer { gap: 18px; } }
 @media (max-width: 900px) {
@@ -272,6 +291,7 @@ footer .right { margin-left: auto; }
       <div class="now" id="now" hidden><span class="dot"></span><span>Playing <b id="nowName"></b></span></div>
     </div>
   </header>
+  <div class="updbar" id="updbar" role="status" hidden></div>
 
   <main>
     <section class="list" aria-label="Games">
@@ -375,6 +395,9 @@ function showArt(url) {
   img.onload = () => {
     if (artShown !== url) return;
     next.style.backgroundImage = `url("${full}")`;
+    const tall = img.naturalHeight > img.naturalWidth;
+    next.classList.toggle("tall", tall);
+    next.style.setProperty("--ar", img.naturalWidth + " / " + img.naturalHeight);
     next.classList.add("on");
     cur.classList.remove("on");
     artLayer ^= 1;
@@ -493,7 +516,8 @@ async function refresh() {
   const r = await api("state");
   if (r.status !== 200) return;
   clearTimeout(refresh.fast);
-  if (r.data.job && !r.data.job.finished) refresh.fast = setTimeout(refresh, 500);
+  const up = r.data.update && r.data.update.phase;
+  if ((r.data.job && !r.data.job.finished) || (up && up !== "failed")) refresh.fast = setTimeout(refresh, 500);
   const sig = JSON.stringify(r.data);
   if (sig === refresh.last) return;
   refresh.last = sig;
@@ -512,9 +536,52 @@ async function refresh() {
     api("install-dismiss");
   }
   if (!dialogOpen()) render();
+  renderUpdate(first);
   const sc = state.shortcut;
   $("addShortcut").hidden = !sc || sc.exists || sc.inTemp;
   if (first) setTimeout(offerShortcut, 900);
+}
+
+// ---------- launcher update ----------
+let updHidden = false;
+function renderUpdate(first) {
+  const u = state.update || {};
+  const b = $("updbar");
+  if (first && u.updated) toast("Updated to v" + state.version + ".");
+  if (u.phase === "downloading" || u.phase === "checking" || u.phase === "restarting") {
+    const p = u.total > 0 ? Math.min(100, Math.floor(u.done * 100 / u.total)) : 0;
+    const what = u.phase === "downloading" ? "Downloading " + esc(u.version) + "…"
+      : u.phase === "checking" ? "Checking the download…" : "Restarting the launcher…";
+    b.className = "updbar"; b.hidden = false;
+    b.innerHTML = `<span class="msg"><b>${what}</b></span>` +
+      (u.phase === "downloading" ? `<span class="bar"><span class="fill" style="width:${p}%"></span></span>` : "");
+    return;
+  }
+  if (u.phase === "failed") {
+    b.className = "updbar err"; b.hidden = false;
+    b.innerHTML = `<span class="msg"><b>The update didn't install.</b> ${esc(u.error)}</span>
+      <button class="btn primary" id="updRetry">Try again</button><button class="btn" id="updClose">Close</button>`;
+    $("updRetry").onclick = startUpdate;
+    $("updClose").onclick = async () => { updHidden = true; await api("self-update-dismiss"); refresh(); };
+    return;
+  }
+  if (u.available && !updHidden) {
+    b.className = "updbar"; b.hidden = false;
+    b.innerHTML = `<span class="msg">Update available: <b>${esc(u.version)}</b></span>
+      ${u.url ? `<button class="linkbtn" id="updNotes">What's new</button>` : ""}
+      <button class="btn primary" id="updNow">Update now</button><button class="btn" id="updLater">Not now</button>`;
+    $("updNow").onclick = startUpdate;
+    $("updLater").onclick = () => { updHidden = true; b.hidden = true; };
+    if ($("updNotes")) $("updNotes").onclick = () => openUrl(u.url);
+    return;
+  }
+  b.hidden = true;
+}
+
+async function startUpdate() {
+  const r = await api("self-update", {});
+  if (r.status !== 200) { toast(r.data.error || "Couldn't start the update.", true); return; }
+  refresh.last = null; refresh();
 }
 
 // ---------- actions ----------

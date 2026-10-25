@@ -10,6 +10,7 @@ The only official download is the **Releases** page of this repository. If someo
 - It doesn't talk to other players and has no chat, accounts or servers of its own.
 - It only installs games from each project's own GitHub release page, over HTTPS, and checks the project's published checksum when there is one.
 - Its menu runs on your own PC only (`127.0.0.1`), protected by a random key that changes every time it starts. Websites can't control it.
+- It only updates itself when you click **Update now**, only from this repository's own Releases page, and only if the download matches the SHA-256 in the release's `SHA256SUMS.txt`. A release without a checksum, or a download that doesn't match, is refused.
 - It only adds a desktop shortcut if you say yes, and the shortcut only ever points at the launcher itself.
 - It only closes programs that run from a game's own folder, and it refuses to use a whole drive or shared folders (Desktop, Downloads, Program Files, Windows) as a game folder.
 
