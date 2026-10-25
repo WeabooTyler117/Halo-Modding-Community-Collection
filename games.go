@@ -27,7 +27,10 @@ type GameDef struct {
 	Highlights   []string `json:"highlights"`
 	Notes        []string `json:"notes"`
 	ClosedBeta   bool     `json:"closedBeta"`
-	Requires     string   `json:"requires"` // shown in bold until the game is fully set up
+	// GetViaDiscord: the download is a file posted in the project's Discord
+	// (CommunityURL is the invite, DownloadURL the message with the file).
+	GetViaDiscord bool   `json:"getViaDiscord"`
+	Requires      string `json:"requires"` // shown in bold until the game is fully set up
 	// Installing from the official GitHub release.
 	AssetRe      *regexp.Regexp `json:"-"` // which release file to download
 	AssetIsZip   bool           `json:"-"`
@@ -122,23 +125,26 @@ var games = []*GameDef{
 		},
 	},
 	{
-		ID:           "h2",
-		Title:        "HALO 2",
-		Short:        "Halo 2",
-		Project:      "Project Gravemind",
-		Year:         "2004",
-		Tagline:      "MCC's Halo 2 as its own game, with matchmaking playlists and the original 1–50 ranks.",
-		Accent:       "#6f8cff",
-		ProjectURL:   "https://briroz1.github.io/project-gravemind/index.html",
-		DownloadURL:  "https://briroz1.github.io/project-gravemind/download.html",
-		Highlights:   []string{"Matchmaking with Halo 2 ranks", "Dedicated servers, up to 24 players", "Online co-op, up to 6", "Steam Workshop mods"},
-		Notes:        []string{"Uses your Steam copy of MCC with Halo 2 installed."},
-		ClosedBeta:   true,
-		MCCFolder:    "halo2",
-		MCCName:      "Halo 2",
-		DefaultPaths: []string{`D:\ProjectGravemind`, `D:\Project Gravemind`, `D:\Gravemind`, `C:\ProjectGravemind`},
-		ExeMatch:     gravemindExe,
-		Version:      func(dir, exe string) string { return versionFromName(exe) },
+		ID:         "h2",
+		Title:      "HALO 2",
+		Short:      "Halo 2",
+		Project:    "Project Gravemind",
+		Year:       "2004",
+		Tagline:    "MCC's Halo 2 as its own game, with matchmaking playlists and the original 1–50 ranks.",
+		Accent:     "#6f8cff",
+		ProjectURL: "https://briroz1.github.io/project-gravemind/index.html",
+		// The download is posted in the project's Discord: join first, then the
+		// message link opens.
+		CommunityURL:  "https://discord.gg/7nAmnwnQqb",
+		DownloadURL:   "https://discord.com/channels/1558176132027785256/1562246771147673720/1562555204694450328",
+		GetViaDiscord: true,
+		Highlights:    []string{"Matchmaking with Halo 2 ranks", "Dedicated servers, up to 24 players", "Online co-op, up to 6", "Steam Workshop mods"},
+		Notes:         []string{"Uses your Steam copy of MCC with Halo 2 installed.", "Download: join the Project Gravemind Discord, then open the download message."},
+		MCCFolder:     "halo2",
+		MCCName:       "Halo 2",
+		DefaultPaths:  []string{`D:\ProjectGravemind`, `D:\Project Gravemind`, `D:\Gravemind`, `C:\ProjectGravemind`},
+		ExeMatch:      gravemindExe,
+		Version:       func(dir, exe string) string { return versionFromName(exe) },
 	},
 	{
 		ID:           "h3",

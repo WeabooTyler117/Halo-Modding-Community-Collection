@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.3.5
+- New: if a game closes within a few seconds of pressing Play, the launcher explains the most common cause (Windows Security's Controlled folder access) and how to allow the game.
+- README: new FAQ entry for games that close right away.
+- Halo 2: Project Gravemind is out of closed beta. **Get it** now walks you through its Discord (join the server, then open the download message), and there's a **Community** button for the Discord.
+
 ## v0.3.4
 - New: the launcher updates itself. When a new version is out, a bar at the top says so. Click **Update now** and it downloads the new version from this repository's Releases page, checks it against the release's SHA-256 checksum, and restarts. Nothing changes unless you click. (Coming from v0.3.3? Download v0.3.4 by hand this one time; after that it's automatic.)
 - New background art for Halo: Reach and Halo 3.

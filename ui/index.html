@@ -244,6 +244,9 @@ footer .right { margin-left: auto; }
   background: rgba(8,14,20,.82); border-left: 4px solid var(--warn); font-size: 17px; line-height: 1.4;
 }
 .notice b { font-weight: 700; color: #fff; }
+.notice.quickexit { font-size: 16px; line-height: 1.45; }
+.notice .qx-actions { margin-top: 8px; }
+.notice .qx-actions .linkbtn { padding: 0; }
 .dialog .notice { margin: 14px 0 0; font-size: 16px; }
 .minor { display: flex; gap: 14px; margin: -14px 0 22px; }
 .linkbtn { background: none; border: 0; padding: 0 4px; color: var(--muted); cursor: pointer; font-size: 14px; text-decoration: underline; text-underline-offset: 3px; }
@@ -365,7 +368,7 @@ function rowTag(g) {
   if (g.running) return ['<span class="tag live">Playing</span>'];
   if (g.installed) return ['<span class="tag">' + (g.version ? "v" + esc(g.version) : "Ready") + "</span>"];
   if (g.closedBeta) return ['<span class="tag beta">Closed beta</span>'];
-  return ['<span class="tag">' + (g.canInstall ? "Not installed" : "Not set up") + "</span>"];
+  return ['<span class="tag">' + (g.canInstall || g.getViaDiscord ? "Not installed" : "Not set up") + "</span>"];
 }
 
 function renderRows() {
@@ -416,6 +419,28 @@ function progressHTML(g, j) {
   </div>`;
 }
 
+function quickExitHTML(g) {
+  return `<div class="notice quickexit">
+    <b>${esc(g.short)} closed right after starting.</b>
+    If Windows Security's <b>Controlled folder access</b> is on, it can stop the game from saving its settings, and the game quits.
+    To allow it: open <b>Windows Security</b> → <b>Virus &amp; threat protection</b> → <b>Manage ransomware protection</b>
+    → <b>Allow an app through Controlled folder access</b> → <b>Add an allowed app</b>, and add <b>${esc(g.quickExit)}</b>
+    (it's under <b>Recently blocked apps</b>, or use <b>Browse all apps</b> and pick it from the game's folder). Then press Play again. After a game update you may need to allow the new version too.
+    <div class="qx-actions"><button class="linkbtn" id="qxDismiss">Dismiss</button></div>
+  </div>`;
+}
+
+// The download lives in the project's Discord: the message link only opens
+// once you've joined, so offer both, in order.
+function askDiscord(g) {
+  confirmDialog("Get " + g.project,
+    "The download is posted in the " + g.project + " Discord. 1. Join the server. " +
+    "2. Open the download message and download the file. " +
+    "3. Unzip it (for example to D:\\Project Gravemind), then come back here and click Choose folder.",
+    "Join Discord", () => openUrl(g.communityUrl),
+    { text: "Open download message", fn: () => openUrl(g.downloadUrl) });
+}
+
 function relDate(iso) {
   if (!iso || iso.startsWith("0001")) return "";
   const d = new Date(iso);
@@ -439,6 +464,8 @@ function renderDetail() {
     facts.push(["Version", `<dd>${g.version ? "v" + esc(g.version) : "Updates itself when it starts"}${g.updateMsg ? `<small>${esc(g.updateMsg)}</small>` : ""}</dd>`]);
   } else if (g.canInstall) {
     facts.push(["Status", `<dd class="warn">Not installed<small>Install downloads the latest release from the project's GitHub page. Already have it? Choose its folder instead.</small></dd>`]);
+  } else if (g.getViaDiscord && !g.path) {
+    facts.push(["Status", `<dd class="warn">Not installed<small>Get it from the ${esc(g.project)} Discord: join the server, open the download message, unzip the file, then choose its folder here.</small></dd>`]);
   } else if (g.closedBeta) {
     facts.push(["Status", `<dd class="warn">Closed beta<small>Not downloadable yet. Once you have it, choose its folder here.</small></dd>`]);
   } else {
@@ -455,7 +482,10 @@ function renderDetail() {
   let playLabel = "PLAY", playDisabled = false;
   if (g.running) playLabel = "RETURN TO GAME";
   else if (other) playLabel = "SWITCH TO " + g.short.toUpperCase();
-  if (!g.installed) { playLabel = g.closedBeta ? "CLOSED BETA" : g.canInstall ? "INSTALL" : "NOT SET UP"; playDisabled = !g.canInstall; }
+  if (!g.installed) {
+    playLabel = g.closedBeta ? "CLOSED BETA" : g.canInstall ? "INSTALL" : g.getViaDiscord ? "GET IT" : "NOT SET UP";
+    playDisabled = !g.canInstall && !g.getViaDiscord;
+  }
   const installing = j && !j.finished;
 
   $("detail").innerHTML = `
@@ -465,12 +495,13 @@ function renderDetail() {
     <p class="tagline">${esc(g.tagline)}</p>
     ${g.requires && (!g.installed || (g.checks || []).some(c => c.warn)) ? `<p class="notice"><b>${esc(g.requires)}</b></p>` : ""}
     ${j ? progressHTML(g, j) : ""}
+    ${g.quickExit && !j ? quickExitHTML(g) : ""}
     <div class="actions" ${installing || (j && j.phase === "failed") ? "hidden" : ""}>
       <button class="btn primary" id="play" ${playDisabled ? "disabled" : ""}><i class="glyph g-a">A</i>${esc(playLabel)}</button>
       ${g.running ? `<button class="btn" id="quit"><i class="glyph g-b">B</i>Close game</button>` : ""}
       <button class="btn" id="pick">${g.installed ? "Change folder" : "Choose folder"}</button>
       ${g.installed ? `<button class="btn" id="folder"><i class="glyph g-x">X</i>Open folder</button>` : ""}
-      <button class="btn" id="page"><i class="glyph g-y">Y</i>${g.installed ? "Project page" : "Get it"}</button>
+      <button class="btn" id="page"><i class="glyph g-y">Y</i>${g.installed || g.getViaDiscord ? "Project page" : "Get it"}</button>
       ${g.communityUrl ? `<button class="btn" id="community">Community</button>` : ""}
     </div>
     <div class="minor">
@@ -486,8 +517,9 @@ function renderDetail() {
   if ($("bgclear")) $("bgclear").onclick = async () => { await api("art-clear", { id: g.id }); refresh(); };
   if ($("retry")) $("retry").onclick = async () => { await api("install-dismiss"); askInstall(g, j.dir); };
   if ($("dismiss")) $("dismiss").onclick = async () => { await api("install-dismiss"); refresh(); };
+  if ($("qxDismiss")) $("qxDismiss").onclick = async () => { await api("quick-exit-dismiss", { id: g.id }); refresh(); };
   $("pick").onclick = pick;
-  $("page").onclick = () => openUrl(g.installed ? g.projectUrl : g.downloadUrl);
+  $("page").onclick = () => openUrl(g.installed || g.getViaDiscord ? g.projectUrl : g.downloadUrl);
   if ($("folder")) $("folder").onclick = folder;
   if ($("quit")) $("quit").onclick = () => closeGame(g.id);
   if ($("community")) $("community").onclick = () => openUrl(g.communityUrl);
@@ -588,6 +620,7 @@ async function startUpdate() {
 async function play(replace) {
   const g = game();
   if (g && !g.installed && g.canInstall) { askInstall(g); return; }
+  if (g && !g.installed && g.getViaDiscord) { askDiscord(g); return; }
   if (!g || !g.installed || busy) return;
   busy = true;
   if (!g.running) toast(replace ? "Closing " + byId(state.running).short + "…" : "Starting " + g.title + "…");
@@ -736,7 +769,7 @@ function act(button) {
     case "down": select(sel + 1); break;
     case "a": play(); break;
     case "x": folder(); break;
-    case "y": openUrl(g.installed ? g.projectUrl : g.downloadUrl); break;
+    case "y": openUrl(g.installed || g.getViaDiscord ? g.projectUrl : g.downloadUrl); break;
     case "b": if (g.running) closeGame(g.id); break;
   }
 }

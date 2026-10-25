@@ -30,7 +30,7 @@ const (
 )
 
 // appVersion is a var so test builds can set it with -ldflags -X main.appVersion=...
-var appVersion = "0.3.4"
+var appVersion = "0.3.5"
 
 // ---------- config ----------
 
@@ -298,9 +298,15 @@ func fetchRelease(repo string) {
 // ---------- running games ----------
 
 var (
-	runMu    sync.Mutex
-	launched = map[string]int{} // game id -> pid we started (while alive)
+	runMu     sync.Mutex
+	launched  = map[string]int{}    // game id -> pid we started (while alive)
+	quickExit = map[string]string{} // game id -> program that closed right after Play
 )
+
+// quickExitWindow: a game that closes this soon after Play, with nothing of
+// it left running, almost certainly didn't start properly (often Windows
+// Defender's Controlled folder access blocking it from saving settings).
+const quickExitWindow = 15 * time.Second
 
 func underDir(path, dir string) bool {
 	if path == "" || dir == "" {
@@ -374,6 +380,7 @@ type GameState struct {
 	UpdateMsg  string   `json:"updateMsg"`
 	Running    bool     `json:"running"`
 	Checks     []Check  `json:"checks"`
+	QuickExit  string   `json:"quickExit"`
 	Art        string   `json:"art"`
 	ArtCustom  bool     `json:"artCustom"`
 	CanInstall bool     `json:"canInstall"`
@@ -423,6 +430,11 @@ func buildState() map[string]any {
 			s.SuggestDir = suggestInstallDir(g)
 		}
 		s.Running = len(running[g.ID]) > 0
+		if !s.Running {
+			runMu.Lock()
+			s.QuickExit = quickExit[g.ID]
+			runMu.Unlock()
+		}
 		if s.Running {
 			runningID = g.ID
 		}
@@ -498,16 +510,33 @@ func launchGame(id string) error {
 		return err
 	}
 	pid := cmd.Process.Pid
+	started := time.Now()
 	runMu.Lock()
 	launched[id] = pid
+	delete(quickExit, id)
 	runMu.Unlock()
 	go func() {
 		cmd.Wait()
+		quick := time.Since(started) < quickExitWindow
 		runMu.Lock()
 		if launched[id] == pid {
 			delete(launched, id)
 		}
 		runMu.Unlock()
+		if !quick {
+			return
+		}
+		// Some games hand over to a second program; only warn when nothing
+		// of the game is still running a moment later.
+		time.Sleep(3 * time.Second)
+		if len(runningPIDs()[id]) == 0 {
+			log.Printf("%s closed %s after starting", id, time.Since(started).Round(time.Second))
+			runMu.Lock()
+			if launched[id] == 0 {
+				quickExit[id] = filepath.Base(exe)
+			}
+			runMu.Unlock()
+		}
 	}()
 	cfgMu.Lock()
 	cfg.LastPlayed = id
@@ -739,6 +768,14 @@ func routes() *http.ServeMux {
 			return
 		}
 		openURL(q.URL)
+		writeJSON(w, 200, map[string]string{"status": "ok"})
+	}))
+
+	mux.HandleFunc("/api/quick-exit-dismiss", guard(func(w http.ResponseWriter, r *http.Request) {
+		q := readReq(r)
+		runMu.Lock()
+		delete(quickExit, q.ID)
+		runMu.Unlock()
 		writeJSON(w, 200, map[string]string{"status": "ok"})
 	}))
 

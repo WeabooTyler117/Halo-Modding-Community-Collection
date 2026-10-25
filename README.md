@@ -59,7 +59,7 @@ If a game isn't on your PC yet, press **INSTALL** and the launcher downloads it 
 |---|---|---|
 | **Halo: Reach** | [Reach Renaissance](https://github.com/NETF1ix/reach-renaissance-releases) | Halo: The Master Chief Collection **on Steam**, with Halo: Reach installed |
 | **Halo: Combat Evolved** | [OpenCE](https://github.com/OpenCommunityEdition/OpenCE) | **You must have your own copy of the Xbox ISO file for Halo: Combat Evolved.** (MCC's copy doesn't work for this one.) |
-| **Halo 2** | [Project Gravemind](https://briroz1.github.io/project-gravemind/) | Halo: The Master Chief Collection **on Steam**, with Halo 2 installed. *Closed beta: not downloadable yet.* |
+| **Halo 2** | [Project Gravemind](https://briroz1.github.io/project-gravemind/) | Halo: The Master Chief Collection **on Steam**, with Halo 2 installed. Download it from the [Project Gravemind Discord](https://discord.gg/7nAmnwnQqb) (join, then open the [download message](https://discord.com/channels/1558176132027785256/1562246771147673720/1562555204694450328)). |
 | **Halo 3** | [Project Reclaimer](https://projectreclaimer.dev) | Halo: The Master Chief Collection **on Steam**, with Halo 3 installed |
 
 - **Windows 10 or 11.** That's all the launcher itself needs.
@@ -95,6 +95,16 @@ The launcher never includes or changes any game files, and it never asks for pas
 
 **My antivirus flagged it.**
 Some antivirus programs are wary of new, unsigned programs. You can compare your file against `SHA256SUMS.txt` on the [Releases page](../../releases/latest), or check it on [VirusTotal](https://www.virustotal.com/). If it still worries you, [open an issue](../../issues/new/choose) and tell us which antivirus said what.
+
+**I press Play, it says "Playing" for a second, then nothing happens.**
+This is usually Windows Security's **Controlled folder access** (ransomware protection). It stops programs it doesn't know from saving to folders like Documents and Desktop, and some games quit when they can't save their settings. To allow the game:
+1. Open **Windows Security** (search for it in the Start menu).
+2. Click **Virus & threat protection**, then **Manage ransomware protection**.
+3. Click **Allow an app through Controlled folder access**, then **Add an allowed app**.
+4. Pick the game's program from **Recently blocked apps** (or use **Browse all apps** and choose it from the game's folder).
+5. Press **Play** in the launcher again.
+
+When a game updates to a new version, you may need to allow the new program the same way. If Controlled folder access is on, also keep the launcher and your games out of the Desktop and Documents folders (for example in `C:\Games`), so installs and launcher updates can save their files.
 
 **It says a game is "Not set up", but I have it.**
 Click **Change folder** (or **Choose folder**) on that game and point it at the folder where you unzipped it.
