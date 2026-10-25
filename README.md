@@ -17,6 +17,10 @@
 
 ## Download
 
+<a href="../../releases/latest/download/Halo-Modding-Community-Collection.exe">
+  <img src="docs/download-banner.jpg" width="100%" alt="Download Halo Modding Community Collection for Windows">
+</a>
+
 **[Download Halo-Modding-Community-Collection.exe](../../releases/latest/download/Halo-Modding-Community-Collection.exe)** (latest version, one file, no installer)
 
 Or see every version on the [Releases page](../../releases).
@@ -26,7 +30,7 @@ Only download the launcher from this repository. Copies shared anywhere else cou
 
 ## How to play (3 steps)
 
-**1. Click the download link above.**
+**1. Click the "Download for Windows" banner above** (or the blue link under it).
 Your browser saves a file called `Halo-Modding-Community-Collection.exe`, usually in your **Downloads** folder.
 
 **2. Double-click that file to open it.**
