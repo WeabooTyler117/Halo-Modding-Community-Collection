@@ -10,21 +10,23 @@
 </p>
 
 <p align="center">
-  <a href="../../releases/latest/download/Halo-Modding-Community-Collection.exe">
-    <img src="docs/download-button.svg" width="460" alt="Download Halo Modding Community Collection">
-  </a>
+  <a href="../../releases/latest"><img src="https://img.shields.io/github/v/release/WeabooTyler117/Halo-Modding-Community-Collection?label=latest%20version" alt="Latest version"></a>
+  <img src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-blue" alt="Windows 10 and 11">
+  <img src="https://img.shields.io/badge/price-free-brightgreen" alt="Free">
 </p>
 
-<p align="center">
-  The button downloads the launcher straight away. No account, no installer, nothing else to get.<br>
-  <b>Only download it from this page.</b> Copies shared anywhere else could be tampered with.
-</p>
+## Download
+
+**[Download Halo-Modding-Community-Collection.exe](../../releases/latest/download/Halo-Modding-Community-Collection.exe)** (latest version, one file, no installer)
+
+Or see every version on the [Releases page](../../releases).
+Only download the launcher from this repository. Copies shared anywhere else could be tampered with.
 
 ---
 
 ## How to play (3 steps)
 
-**1. Click the big orange DOWNLOAD button above.**
+**1. Click the download link above.**
 Your browser saves a file called `Halo-Modding-Community-Collection.exe`, usually in your **Downloads** folder.
 
 **2. Double-click that file to open it.**
