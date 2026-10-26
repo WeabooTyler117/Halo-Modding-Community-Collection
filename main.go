@@ -30,7 +30,7 @@ const (
 )
 
 // appVersion is a var so test builds can set it with -ldflags -X main.appVersion=...
-var appVersion = "0.3.6"
+var appVersion = "0.3.7"
 
 // ---------- config ----------
 
@@ -382,6 +382,7 @@ type GameState struct {
 	Running    bool     `json:"running"`
 	Checks     []Check  `json:"checks"`
 	QuickExit  string   `json:"quickExit"`
+	WrongDir   string   `json:"wrongDir"`
 	Online     *Online  `json:"online"`
 	Art        string   `json:"art"`
 	ArtCustom  bool     `json:"artCustom"`
@@ -408,6 +409,9 @@ func buildState() map[string]any {
 			s.Exe = g.ExeMatch(s.Path)
 		}
 		s.Installed = s.Exe != ""
+		if !s.Installed && s.Path != "" && g.WrongFolder != nil {
+			s.WrongDir = g.WrongFolder(s.Path)
+		}
 		if s.Installed {
 			s.ExeName = filepath.Base(s.Exe)
 			s.Version = g.Version(s.Path, s.Exe)
@@ -751,7 +755,13 @@ func routes() *http.ServeMux {
 			return
 		}
 		if g.ExeMatch(p) == "" {
-			writeJSON(w, 400, map[string]string{"error": "Couldn't find " + g.Project + " in that folder."})
+			msg := "Couldn't find " + g.Project + " in that folder."
+			if g.WrongFolder != nil {
+				if why := g.WrongFolder(p); why != "" {
+					msg = why
+				}
+			}
+			writeJSON(w, 400, map[string]string{"error": msg})
 			return
 		}
 		cfgMu.Lock()

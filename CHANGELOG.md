@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.3.7
+- Fix: the launcher no longer mistakes a Project Reclaimer **server** folder for the game (a server flashes a window and closes). It now says "That folder is a Project Reclaimer server, not the game" and asks for the folder with project-reclaimer-client.
+
 ## v0.3.6
 - Halo 3 is now **Halo 3 + ODST**: Project Reclaimer plays both. New combined background art, and the launcher shows whether Halo 3: ODST is installed in MCC (you must own Halo 3: ODST on Steam to play it).
 - New: Halo: Combat Evolved shows how many people are playing right now, from OpenCE's public server list (checked against OpenCE's signature, like OpenCE's own server browser). The other projects don't publish a player count yet.

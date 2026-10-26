@@ -42,6 +42,9 @@ type GameDef struct {
 	// Install describes the official release download, nil if the launcher
 	// can't install this game.
 	Install *InstallSpec `json:"-"`
+	// WrongFolder explains why a folder isn't the game (e.g. it's the
+	// project's server), "" when there's nothing specific to say. May be nil.
+	WrongFolder func(dir string) string `json:"-"`
 	// ExeMatch picks the game's executable inside its folder.
 	ExeMatch func(dir string) string `json:"-"`
 	// Version reads the installed version, "" when unknown.
@@ -172,10 +175,16 @@ var games = []*GameDef{
 		MCCExtra:     []MCCPart{{Folder: "halo3odst", Name: "Halo 3: ODST", Detail: "Only needed to play ODST: you must own Halo 3: ODST on Steam, then turn it on in MCC's DLC settings in Steam."}},
 		DefaultPaths: []string{`D:\RECLAIMER`, `D:\ProjectReclaimer`, `C:\ProjectReclaimer`, `C:\Games\ProjectReclaimer`},
 		ExeMatch:     reclaimerExe,
-		AssetRe:      regexp.MustCompile(`(?i)^project-reclaimer(-client)?-v[\d.]+\.exe$`),
-		FolderName:   "ProjectReclaimer",
-		Install:      &InstallSpec{DirName: "ProjectReclaimer", Asset: assetPrefix("project-reclaimer", ".exe", "rcon"), Zip: false},
-		Version:      func(dir, exe string) string { return versionFromName(exe) },
+		WrongFolder: func(dir string) string {
+			if reclaimerExe(dir) == "" && isReclaimerServer(dir) {
+				return "That folder is a Project Reclaimer server, not the game. Choose the folder with project-reclaimer-client (download it from the project page if you don't have it)."
+			}
+			return ""
+		},
+		AssetRe:    regexp.MustCompile(`(?i)^project-reclaimer(-client)?-v[\d.]+\.exe$`),
+		FolderName: "ProjectReclaimer",
+		Install:    &InstallSpec{DirName: "ProjectReclaimer", Asset: assetPrefix("project-reclaimer", ".exe", "rcon"), Zip: false},
+		Version:    func(dir, exe string) string { return versionFromName(exe) },
 	},
 }
 
@@ -254,13 +263,30 @@ func isHelperExe(name string) bool {
 
 // reclaimerExe picks the newest Project Reclaimer client in the folder.
 // The in-game updater may leave older copies next to the new one.
+// isReclaimerServer says whether a folder holds Project Reclaimer's
+// dedicated server rather than the game: the server is project-reclaimer.exe
+// with its hosting files (bans.json, a playlists folder) beside it, while the
+// game is project-reclaimer-client-vX.exe.
+func isReclaimerServer(dir string) bool {
+	if _, err := os.Stat(filepath.Join(dir, "bans.json")); err == nil {
+		return true
+	}
+	return dirExists(filepath.Join(dir, "playlists"))
+}
+
 func reclaimerExe(dir string) string {
+	server := isReclaimerServer(dir)
 	var cands []string
 	for _, p := range listExes(dir) {
 		n := strings.ToLower(filepath.Base(p))
-		if strings.HasPrefix(n, "project-reclaimer") && !isHelperExe(n) {
-			cands = append(cands, p)
+		if !strings.HasPrefix(n, "project-reclaimer") || isHelperExe(n) || strings.Contains(n, "server") {
+			continue
 		}
+		// In a server's folder only the client counts, never the server itself.
+		if server && !strings.HasPrefix(n, "project-reclaimer-client") {
+			continue
+		}
+		cands = append(cands, p)
 	}
 	if len(cands) == 0 {
 		return ""

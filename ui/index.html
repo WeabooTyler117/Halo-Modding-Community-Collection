@@ -473,6 +473,8 @@ function renderDetail() {
   if (g.installed) {
     facts.push(["Installed", `<dd class="ok">${esc(g.exeName)}<small class="path" title="${esc(g.path)}">${esc(g.path)}</small></dd>`]);
     facts.push(["Version", `<dd>${g.version ? "v" + esc(g.version) : "Updates itself when it starts"}${g.updateMsg ? `<small>${esc(g.updateMsg)}</small>` : ""}</dd>`]);
+  } else if (g.wrongDir) {
+    facts.push(["Status", `<dd class="bad">Wrong folder<small>${esc(g.wrongDir)} (${esc(g.path)})</small></dd>`]);
   } else if (g.canInstall) {
     facts.push(["Status", `<dd class="warn">Not installed<small>Install downloads the latest release from the project's GitHub page. Already have it? Choose its folder instead.</small></dd>`]);
   } else if (g.getViaDiscord && !g.path) {
