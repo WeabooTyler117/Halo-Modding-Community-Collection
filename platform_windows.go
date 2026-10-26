@@ -108,12 +108,6 @@ func powershell(script string, env ...string) (string, error) {
 	return strings.TrimSpace(string(b)), err
 }
 
-func focusProcess(pids []int) {
-	for _, p := range pids {
-		powershell(`(New-Object -ComObject WScript.Shell).AppActivate([int]$env:HCC_PID) | Out-Null`, "HCC_PID="+strconv.Itoa(p))
-	}
-}
-
 func steamPath() string {
 	for _, key := range []string{`HKCU\Software\Valve\Steam`, `HKLM\SOFTWARE\WOW6432Node\Valve\Steam`, `HKLM\SOFTWARE\Valve\Steam`} {
 		for _, val := range []string{"SteamPath", "InstallPath"} {
@@ -240,7 +234,7 @@ func openWindow(url string) (func(), bool) {
 		openURL(url)
 		return nil, false
 	}
-	profile := filepath.Join(os.Getenv("LOCALAPPDATA"), "HaloCommunityCollection", "window-v3") // new profile: Edge cached the old icon in "window"
+	profile := windowProfile()
 	os.MkdirAll(profile, 0o755)
 	cmd := exec.Command(b,
 		"--app="+url,
@@ -265,16 +259,35 @@ var (
 	windowCmd *exec.Cmd
 )
 
-// closeWindow ends our app window's browser process (used before restarting
-// into an updated launcher, which opens a fresh window).
+// windowProfile is the browser profile only our app window uses.
+func windowProfile() string {
+	return filepath.Join(os.Getenv("LOCALAPPDATA"), "HaloCommunityCollection", "window-v3") // new profile: Edge cached the old icon in "window"
+}
+
+// Ends every Edge/Chrome process running with our own window profile. The
+// process we started may have handed the window to one that was already
+// running, so its PID alone isn't enough. Other browser windows use other
+// profiles and are never touched. The path goes in through an environment
+// variable, never into the script text.
+const closeWindowScript = `
+$p = $env:HCC_PROFILE
+Get-CimInstance Win32_Process -Filter "Name='msedge.exe' OR Name='chrome.exe'" |
+  Where-Object { $_.CommandLine -and $_.CommandLine.IndexOf($p, [StringComparison]::OrdinalIgnoreCase) -ge 0 } |
+  ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+`
+
+// closeWindow ends our app window (used before restarting into an updated
+// launcher, which opens a fresh window).
 func closeWindow() {
 	windowMu.Lock()
 	cmd := windowCmd
 	windowMu.Unlock()
-	if cmd == nil || cmd.Process == nil {
-		return
+	if cmd != nil && cmd.Process != nil {
+		closeProcesses([]int{cmd.Process.Pid}, true)
 	}
-	closeProcesses([]int{cmd.Process.Pid}, true)
+	if prof := windowProfile(); filepath.IsAbs(prof) {
+		powershell(closeWindowScript, "HCC_PROFILE="+`--user-data-dir=`+prof)
+	}
 	time.Sleep(500 * time.Millisecond)
 }
 

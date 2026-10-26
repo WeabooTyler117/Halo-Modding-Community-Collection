@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.3.6
+- Halo 3 is now **Halo 3 + ODST**: Project Reclaimer plays both. New combined background art, and the launcher shows whether Halo 3: ODST is installed in MCC (you must own Halo 3: ODST on Steam to play it).
+- New: Halo: Combat Evolved shows how many people are playing right now, from OpenCE's public server list (checked against OpenCE's signature, like OpenCE's own server browser). The other projects don't publish a player count yet.
+- Halo 2: Project Gravemind now installs with one click from its official GitHub release, like Reach and Halo 3, and the launcher shows its latest version. The download is checked against the checksum GitHub recorded for it.
+- Game installs are now checked against GitHub's own checksum when a project doesn't publish a checksum file.
+- After updating itself, the launcher closes its old window (it used to stay open).
+- The "Update available" bar is a normal height on big screens.
+- Pressing Play (or Return to game) now brings the game to the front and minimizes the launcher, instead of leaving the game hidden behind it.
+- Controllers: works with DS4Windows (and any setup with more than one controller connected); every connected controller now works.
+- The button hints follow what you're using: A/B/X/Y on a controller, keyboard keys with a mouse or keyboard.
+
 ## v0.3.5
 - New: if a game closes within a few seconds of pressing Play, the launcher explains the most common cause (Windows Security's Controlled folder access) and how to allow the game.
 - README: new FAQ entry for games that close right away.

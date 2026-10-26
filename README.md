@@ -59,8 +59,8 @@ If a game isn't on your PC yet, press **INSTALL** and the launcher downloads it 
 |---|---|---|
 | **Halo: Reach** | [Reach Renaissance](https://github.com/NETF1ix/reach-renaissance-releases) | Halo: The Master Chief Collection **on Steam**, with Halo: Reach installed |
 | **Halo: Combat Evolved** | [OpenCE](https://github.com/OpenCommunityEdition/OpenCE) | **You must have your own copy of the Xbox ISO file for Halo: Combat Evolved.** (MCC's copy doesn't work for this one.) |
-| **Halo 2** | [Project Gravemind](https://briroz1.github.io/project-gravemind/) | Halo: The Master Chief Collection **on Steam**, with Halo 2 installed. Download it from the [Project Gravemind Discord](https://discord.gg/7nAmnwnQqb) (join, then open the [download message](https://discord.com/channels/1558176132027785256/1562246771147673720/1562555204694450328)). |
-| **Halo 3** | [Project Reclaimer](https://projectreclaimer.dev) | Halo: The Master Chief Collection **on Steam**, with Halo 3 installed |
+| **Halo 2** | [Project Gravemind](https://briroz1.github.io/project-gravemind/) | Halo: The Master Chief Collection **on Steam**, with Halo 2 installed. (Beta. Community: [Project Gravemind Discord](https://discord.gg/7nAmnwnQqb).) |
+| **Halo 3 + ODST** | [Project Reclaimer](https://projectreclaimer.dev) | Halo: The Master Chief Collection **on Steam**, with Halo 3 installed. **To play Halo 3: ODST you must also own Halo 3: ODST on Steam** and install it in MCC (optional). |
 
 - **Windows 10 or 11.** That's all the launcher itself needs.
 - The **Microsoft Store / Game Pass** version of MCC doesn't work with these projects. You need the **Steam** version.

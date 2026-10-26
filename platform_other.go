@@ -52,7 +52,8 @@ func closeProcesses(pids []int, force bool) {
 	}
 }
 
-func focusProcess(pids []int) {}
+func focusProcess(pids []int)      {}
+func focusGameWhenReady(id string) {}
 
 func steamPath() string {
 	if p := os.Getenv("HCC_STEAM"); p != "" {

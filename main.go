@@ -30,7 +30,7 @@ const (
 )
 
 // appVersion is a var so test builds can set it with -ldflags -X main.appVersion=...
-var appVersion = "0.3.5"
+var appVersion = "0.3.6"
 
 // ---------- config ----------
 
@@ -363,10 +363,11 @@ func runningPIDs() map[string][]int {
 // ---------- state ----------
 
 type Check struct {
-	Label  string `json:"label"`
-	OK     bool   `json:"ok"`
-	Warn   bool   `json:"warn"`
-	Detail string `json:"detail"`
+	Label    string `json:"label"`
+	OK       bool   `json:"ok"`
+	Warn     bool   `json:"warn"`
+	Detail   string `json:"detail"`
+	Optional bool   `json:"optional"`
 }
 
 type GameState struct {
@@ -381,6 +382,7 @@ type GameState struct {
 	Running    bool     `json:"running"`
 	Checks     []Check  `json:"checks"`
 	QuickExit  string   `json:"quickExit"`
+	Online     *Online  `json:"online"`
 	Art        string   `json:"art"`
 	ArtCustom  bool     `json:"artCustom"`
 	CanInstall bool     `json:"canInstall"`
@@ -424,6 +426,7 @@ func buildState() map[string]any {
 				}
 			}
 		}
+		s.Online = getOnline(g.ID)
 		s.Art, s.ArtCustom = artURL(g.ID)
 		s.CanInstall = g.AssetRe != nil && g.Repo != "" && !g.ClosedBeta
 		if !s.Installed && s.CanInstall {
@@ -448,6 +451,15 @@ func buildState() map[string]any {
 					s.Checks = append(s.Checks, Check{Label: g.MCCName + " installed in MCC", OK: true})
 				} else {
 					s.Checks = append(s.Checks, Check{Label: g.MCCName + " installed in MCC", Warn: true, Detail: "Not found — install it from MCC's content settings in Steam."})
+				}
+				for _, x := range g.MCCExtra {
+					c := Check{Label: x.Name + " in MCC", Optional: true}
+					if dirExists(filepath.Join(mcc.MCCDir, x.Folder)) {
+						c.OK = true
+					} else {
+						c.Detail = x.Detail
+					}
+					s.Checks = append(s.Checks, c)
 				}
 			case mcc.SteamFound:
 				s.Checks = append(s.Checks, Check{Label: "MCC on Steam", Warn: true, Detail: "Steam found, but not MCC."})
@@ -515,6 +527,7 @@ func launchGame(id string) error {
 	launched[id] = pid
 	delete(quickExit, id)
 	runMu.Unlock()
+	go focusGameWhenReady(id)
 	go func() {
 		cmd.Wait()
 		quick := time.Since(started) < quickExitWindow

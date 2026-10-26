@@ -65,9 +65,22 @@ func ghAPI() string {
 }
 
 type ghAsset struct {
-	Name string `json:"name"`
-	URL  string `json:"browser_download_url"`
-	Size int64  `json:"size"`
+	Name   string `json:"name"`
+	URL    string `json:"browser_download_url"`
+	Size   int64  `json:"size"`
+	Digest string `json:"digest"` // "sha256:<hex>", worked out by GitHub when the file was uploaded
+}
+
+// githubSHA256 returns the SHA-256 GitHub recorded for an asset, or "".
+func (a *ghAsset) githubSHA256() string {
+	h, ok := strings.CutPrefix(strings.ToLower(a.Digest), "sha256:")
+	if !ok || len(h) != 64 {
+		return ""
+	}
+	if _, err := hex.DecodeString(h); err != nil {
+		return ""
+	}
+	return h
 }
 
 type ghRelease struct {
@@ -201,6 +214,11 @@ func runInstall(g *GameDef, dir string) {
 	want := ""
 	if sums != nil && officialURL(g.Repo, sums.URL) {
 		want = expectedHash(sums.URL, asset.Name)
+	}
+	if want == "" {
+		// Otherwise the checksum GitHub itself recorded when the file was
+		// uploaded: catches a broken or swapped download on the way.
+		want = asset.githubSHA256()
 	}
 
 	created := !dirExists(dir)

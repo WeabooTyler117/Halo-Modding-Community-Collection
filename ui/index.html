@@ -95,9 +95,14 @@ body.has-art .detail { text-shadow: 0 1px 12px rgba(0,0,0,.65); }
 /* ---------- frame ---------- */
 .app {
   position: relative; z-index: 1; height: 100%;
-  display: grid; grid-template-rows: auto 1fr auto;
+  display: grid; grid-template-rows: auto auto 1fr auto;
   padding: 28px 44px 0;
 }
+/* Fixed rows, so the update bar (row 2) never takes the game list's space. */
+.app > header { grid-row: 1; }
+.app > .updbar { grid-row: 2; }
+.app > main { grid-row: 3; }
+.app > footer { grid-row: 4; }
 header { display: flex; align-items: baseline; gap: 18px; }
 .brand img { width: 40px; height: 40px; vertical-align: -13px; margin-right: 14px; }
 .brand { font-size: 15px; letter-spacing: .32em; font-weight: 600; color: var(--select); }
@@ -202,6 +207,12 @@ footer {
 footer .hint { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
 footer .hint b { font-weight: 600; margin-left: 2px; }
 footer .or { color: var(--muted); font-size: 13px; }
+/* Only the hints for the input you're using: controller glyphs, or keys. */
+footer .or { display: none; }
+body[data-input="kbm"] .glyph { display: none; }
+body[data-input="pad"] footer kbd { display: none; }
+body[data-input="pad"] .pad-only, body[data-input="kbm"] .kbm-only { display: inline-flex; }
+.pad-only, .kbm-only { display: none; }
 kbd {
   display: inline-grid; place-items: center; min-width: 30px; height: 28px; padding: 0 9px;
   font: 600 14px/1 var(--font); color: #fff;
@@ -256,7 +267,7 @@ footer .right { margin-left: auto; }
 .loading { color: var(--muted); padding-top: 10vh; font-size: 18px; }
 .updbar {
   display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
-  margin: 0 0 14px; padding: 10px 16px;
+  margin: 14px 0 0; padding: 10px 16px; align-self: start;
   background: rgba(8,14,20,.88); border-left: 4px solid var(--ok); font-size: 17px;
 }
 .updbar[hidden] { display: none; }
@@ -313,7 +324,7 @@ footer .right { margin-left: auto; }
     <span class="hint"><i class="glyph g-x">X</i><span class="or">or</span><kbd>F</kbd><b>Game folder</b></span>
     <span class="hint"><i class="glyph g-y">Y</i><span class="or">or</span><kbd>P</kbd><b>Project page</b></span>
     <span class="hint"><i class="glyph g-b">B</i><span class="or">or</span><kbd>Esc</kbd><b>Back</b></span>
-    <span class="hint right" id="padState"><kbd>↑</kbd><kbd>↓</kbd><b>Choose</b></span>
+    <span class="hint right"><span class="kbm-only"><kbd>↑</kbd><kbd>↓</kbd></span><i class="glyph">✚</i><b>Choose</b></span>
   </footer>
 </div>
 
@@ -471,10 +482,15 @@ function renderDetail() {
   } else {
     facts.push(["Status", `<dd class="bad">Not set up<small>${g.path ? "Couldn't find the game in " + esc(g.path) + "." : "Download it from the project page, unzip it, then choose its folder here."}</small></dd>`]);
   }
+  if (g.online) {
+    const n = g.online.players, sv = g.online.servers;
+    facts.push(["Playing now", `<dd class="${n ? "ok" : ""}">${n} ${n === 1 ? "player" : "players"}<small>on ${sv} public ${sv === 1 ? "server" : "servers"} · from ${esc(g.project)}'s server list</small></dd>`]);
+  }
   if (g.latest) {
     facts.push(["Latest release", `<dd>${esc(g.latest.tag)}<small>${esc(relDate(g.latest.published))}</small></dd>`]);
   }
   for (const c of g.checks || []) {
+    if (c.optional && !c.ok) { facts.push([esc(c.label), `<dd>Not installed (optional)<small>${esc(c.detail)}</small></dd>`]); continue; }
     facts.push([esc(c.label), `<dd class="${c.ok ? "ok" : c.warn ? "warn" : "bad"}">${c.ok ? "Found" : "Check"}${c.detail ? `<small class="${c.ok ? "path" : ""}" title="${esc(c.detail)}">${esc(c.detail)}</small>` : ""}</dd>`]);
   }
 
@@ -546,6 +562,7 @@ function select(i) {
 
 async function refresh() {
   const r = await api("state");
+  if (r.status === 403 && state) { staleWindow(); return; }
   if (r.status !== 200) return;
   clearTimeout(refresh.fast);
   const up = r.data.update && r.data.update.phase;
@@ -576,10 +593,32 @@ async function refresh() {
 
 // ---------- launcher update ----------
 let updHidden = false;
+
+// After an update the new launcher opens a fresh window and this page's key
+// no longer works. Close this window; if the browser won't let us, say so.
+// Only close once the old launcher is really gone (if the restart failed it
+// keeps running and this window stays).
+async function checkRestarted() {
+  let r = null;
+  try { r = await api("state"); } catch (e) {}
+  if (!r || r.status === 403) staleWindow();
+  else if (r.data.update && r.data.update.phase === "restarting") setTimeout(checkRestarted, 1500);
+}
+
+function staleWindow() {
+  if (staleWindow.done) return;
+  staleWindow.done = true;
+  try { window.close(); } catch (e) {}
+  setTimeout(() => {
+    document.body.innerHTML = '<div style="display:grid;place-items:center;height:100vh;font:20px var(--font);color:var(--text);text-align:center;padding:24px">' +
+      "The launcher restarted in a new window.<br>You can close this one.</div>";
+  }, 600);
+}
 function renderUpdate(first) {
   const u = state.update || {};
   const b = $("updbar");
   if (first && u.updated) toast("Updated to v" + state.version + ".");
+  if (u.phase === "restarting") setTimeout(checkRestarted, 2500);
   if (u.phase === "downloading" || u.phase === "checking" || u.phase === "restarting") {
     const p = u.total > 0 ? Math.min(100, Math.floor(u.done * 100 / u.total)) : 0;
     const what = u.phase === "downloading" ? "Downloading " + esc(u.version) + "…"
@@ -787,32 +826,61 @@ document.addEventListener("keydown", (e) => {
 // ---------- input: controller ----------
 const prev = {};
 let repeatAt = 0;
-function pollPad() {
-  const pads = navigator.getGamepads ? [...navigator.getGamepads()].filter(Boolean) : [];
-  const p = pads[0];
-  const padMsg = p ? "Controller connected" : "";
-  if (pollPad.last !== padMsg) {
-    pollPad.last = padMsg;
-    $("padState").innerHTML = (p ? '<i class="glyph">✚</i>' : "<kbd>↑</kbd><kbd>↓</kbd>") + "<b>" + "Choose" + "</b>";
-  }
-  if (p && document.hasFocus()) {
-    const b = (i) => p.buttons[i] && p.buttons[i].pressed;
+// Every connected controller counts. DS4Windows shows Windows two at once
+// (the real DualShock plus the Xbox controller it pretends to be), and the
+// first one isn't always the one that works, so read every controller the
+// browser understands and treat a press on any of them as one press.
+function readPads() {
+  const all = navigator.getGamepads ? [...navigator.getGamepads()].filter(p => p && p.connected) : [];
+  const std = all.filter(p => p.mapping === "standard");
+  const pads = std.length ? std : all;
+  const st = { a: false, b: false, x: false, y: false, up: false, down: false, any: false };
+  for (const p of pads) {
+    const b = (i) => !!(p.buttons[i] && p.buttons[i].pressed);
     const axis = p.axes[1] || 0;
-    const down = b(13) || axis > 0.6, up = b(12) || axis < -0.6;
+    st.a ||= b(0); st.b ||= b(1); st.x ||= b(2); st.y ||= b(3);
+    st.down ||= b(13) || axis > 0.6;
+    st.up ||= b(12) || axis < -0.6;
+  }
+  st.any = st.a || st.b || st.x || st.y || st.up || st.down;
+  return { count: all.length, st };
+}
+
+function pollPad() {
+  const { count, st } = readPads();
+  if (count && !pollPad.seen) { pollPad.seen = true; if (!inputMode.chosen) setInputMode("pad"); }
+  if (count && document.hasFocus()) {
+    if (st.any) setInputMode("pad");
     const now = performance.now();
-    const map = { a: b(0), b: b(1), x: b(2), y: b(3) };
-    for (const [name, pressed] of Object.entries(map)) {
-      if (pressed && !prev[name]) act(name);
-      prev[name] = pressed;
+    for (const name of ["a", "b", "x", "y"]) {
+      if (st[name] && !prev[name]) act(name);
+      prev[name] = st[name];
     }
-    if ((up || down) && (!prev.dir || now > repeatAt)) {
-      act(up ? "up" : "down");
+    const dir = st.up || st.down;
+    if (dir && (!prev.dir || now > repeatAt)) {
+      act(st.up ? "up" : "down");
       repeatAt = now + (prev.dir ? 140 : 380);
     }
-    prev.dir = up || down;
+    prev.dir = dir;
   }
   requestAnimationFrame(pollPad);
 }
+
+// ---------- input: show only the hints for what you're using ----------
+// Controller: A/B/X/Y glyphs. Mouse or keyboard: keyboard keys.
+function inputMode() {}
+function setInputMode(m, byUser = true) {
+  if (byUser) inputMode.chosen = true;
+  if (document.body.dataset.input === m) return;
+  document.body.dataset.input = m;
+}
+document.addEventListener("keydown", () => setInputMode("kbm"), true);
+document.addEventListener("mousedown", () => setInputMode("kbm"), true);
+document.addEventListener("mousemove", (e) => {
+  // Ignore the tiny drift a resting mouse reports.
+  if (Math.abs(e.movementX) + Math.abs(e.movementY) > 6) setInputMode("kbm");
+}, true);
+setInputMode("kbm", false);
 requestAnimationFrame(pollPad);
 
 // ---------- loop ----------

@@ -37,6 +37,7 @@ type GameDef struct {
 	FolderName   string         `json:"-"` // suggested install folder name
 	MCCFolder    string         `json:"-"` // folder inside the MCC install this project relies on, "" if not MCC-based
 	MCCName      string         `json:"-"`
+	MCCExtra     []MCCPart      `json:"-"` // optional MCC content (e.g. ODST), shown but not required
 	DefaultPaths []string       `json:"-"`
 	// Install describes the official release download, nil if the launcher
 	// can't install this game.
@@ -46,6 +47,9 @@ type GameDef struct {
 	// Version reads the installed version, "" when unknown.
 	Version func(dir, exe string) string `json:"-"`
 }
+
+// MCCPart is optional content inside the MCC install.
+type MCCPart struct{ Folder, Name, Detail string }
 
 // InstallSpec says which file in a project's latest GitHub release is the
 // Windows download and how to unpack it.
@@ -125,42 +129,47 @@ var games = []*GameDef{
 		},
 	},
 	{
-		ID:         "h2",
-		Title:      "HALO 2",
-		Short:      "Halo 2",
-		Project:    "Project Gravemind",
-		Year:       "2004",
-		Tagline:    "MCC's Halo 2 as its own game, with matchmaking playlists and the original 1–50 ranks.",
-		Accent:     "#6f8cff",
-		ProjectURL: "https://briroz1.github.io/project-gravemind/index.html",
-		// The download is posted in the project's Discord: join first, then the
-		// message link opens.
-		CommunityURL:  "https://discord.gg/7nAmnwnQqb",
-		DownloadURL:   "https://discord.com/channels/1558176132027785256/1562246771147673720/1562555204694450328",
-		GetViaDiscord: true,
-		Highlights:    []string{"Matchmaking with Halo 2 ranks", "Dedicated servers, up to 24 players", "Online co-op, up to 6", "Steam Workshop mods"},
-		Notes:         []string{"Uses your Steam copy of MCC with Halo 2 installed.", "Download: join the Project Gravemind Discord, then open the download message."},
-		MCCFolder:     "halo2",
-		MCCName:       "Halo 2",
-		DefaultPaths:  []string{`D:\ProjectGravemind`, `D:\Project Gravemind`, `D:\Gravemind`, `C:\ProjectGravemind`},
-		ExeMatch:      gravemindExe,
-		Version:       func(dir, exe string) string { return versionFromName(exe) },
+		ID:           "h2",
+		Title:        "HALO 2",
+		Short:        "Halo 2",
+		Project:      "Project Gravemind",
+		Year:         "2004",
+		Tagline:      "MCC's Halo 2 as its own game, with matchmaking playlists and the original 1–50 ranks.",
+		Accent:       "#6f8cff",
+		ProjectURL:   "https://briroz1.github.io/project-gravemind/index.html",
+		Repo:         "BriRoz1/h2gravemind-beta",
+		DownloadURL:  "https://github.com/BriRoz1/h2gravemind-beta/releases/latest",
+		CommunityURL: "https://discord.gg/7nAmnwnQqb",
+		Highlights:   []string{"Matchmaking with Halo 2 ranks", "Dedicated servers, up to 24 players", "Online co-op, up to 6", "Steam Workshop mods"},
+		Notes:        []string{"Uses your Steam copy of MCC with Halo 2 installed.", "Beta: updates itself when it starts."},
+		// The release zip holds h2gravemind.exe plus its small helper files.
+		AssetRe:      regexp.MustCompile(`(?i)^h2gravemind.*\.zip$`),
+		AssetIsZip:   true,
+		FolderName:   "Project Gravemind",
+		MCCFolder:    "halo2",
+		MCCName:      "Halo 2",
+		DefaultPaths: []string{`D:\ProjectGravemind`, `D:\Project Gravemind`, `D:\Gravemind`, `C:\ProjectGravemind`},
+		ExeMatch:     gravemindExe,
+		Version:      func(dir, exe string) string { return versionFromName(exe) },
 	},
 	{
-		ID:           "h3",
-		Title:        "HALO 3",
-		Short:        "Halo 3",
-		Project:      "Project Reclaimer",
-		Year:         "2007",
-		Tagline:      "MCC's Halo 3 outside MCC, with dedicated servers and an in-game updater.",
-		Accent:       "#d8b44a",
-		Repo:         "ProjectReclaimer/project-reclaimer-releases",
-		ProjectURL:   "https://projectreclaimer.dev",
-		DownloadURL:  "https://github.com/ProjectReclaimer/project-reclaimer-releases/releases/latest",
-		Highlights:   []string{"Dedicated servers with RCON tools", "In-game updater keeps settings, maps & mods", "Finds Halo 3 in any Steam library"},
-		Notes:        []string{"Needs MCC on Steam with Halo 3 installed.", "Logs: Documents\\My Games\\Project Reclaimer\\Logs."},
+		ID:          "h3",
+		Title:       "HALO 3 + ODST",
+		Short:       "Halo 3",
+		Project:     "Project Reclaimer",
+		Year:        "2007 · 2009",
+		Tagline:     "MCC's Halo 3 and Halo 3: ODST outside MCC, with dedicated servers and an in-game updater.",
+		Accent:      "#d8b44a",
+		Repo:        "ProjectReclaimer/project-reclaimer-releases",
+		ProjectURL:  "https://projectreclaimer.dev",
+		DownloadURL: "https://github.com/ProjectReclaimer/project-reclaimer-releases/releases/latest",
+		Highlights:  []string{"Halo 3: ODST campaign & Firefight, co-op up to 16", "Dedicated servers with RCON tools", "In-game updater keeps settings, maps & mods", "Finds Halo 3 in any Steam library"},
+		Notes: []string{"Needs MCC on Steam with Halo 3 installed.",
+			"Halo 3: ODST is optional: to play it you must own Halo 3: ODST on Steam and install it in MCC (Steam → MCC → Properties → DLC).",
+			"Logs: Documents\\My Games\\Project Reclaimer\\Logs."},
 		MCCFolder:    "halo3",
 		MCCName:      "Halo 3",
+		MCCExtra:     []MCCPart{{Folder: "halo3odst", Name: "Halo 3: ODST", Detail: "Only needed to play ODST: you must own Halo 3: ODST on Steam, then turn it on in MCC's DLC settings in Steam."}},
 		DefaultPaths: []string{`D:\RECLAIMER`, `D:\ProjectReclaimer`, `C:\ProjectReclaimer`, `C:\Games\ProjectReclaimer`},
 		ExeMatch:     reclaimerExe,
 		AssetRe:      regexp.MustCompile(`(?i)^project-reclaimer(-client)?-v[\d.]+\.exe$`),
