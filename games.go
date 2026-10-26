@@ -168,6 +168,7 @@ var games = []*GameDef{
 		DownloadURL: "https://github.com/ProjectReclaimer/project-reclaimer-releases/releases/latest",
 		Highlights:  []string{"Halo 3: ODST campaign & Firefight, co-op up to 16", "Dedicated servers with RCON tools", "In-game updater keeps settings, maps & mods", "Finds Halo 3 in any Steam library"},
 		Notes: []string{"Needs MCC on Steam with Halo 3 installed.",
+			"Put the Project Reclaimer client (project-reclaimer-client-v….exe) in the folder you choose. A Reclaimer server folder won't work.",
 			"Halo 3: ODST is optional: to play it you must own Halo 3: ODST on Steam and install it in MCC (Steam → MCC → Properties → DLC).",
 			"Logs: Documents\\My Games\\Project Reclaimer\\Logs."},
 		MCCFolder:    "halo3",

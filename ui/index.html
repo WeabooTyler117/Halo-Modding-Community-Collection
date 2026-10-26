@@ -701,7 +701,7 @@ const NEEDS = {
 function askInstall(g, dir) {
   const j = state.job;
   if (j && !j.finished) { toast("Wait for the current install to finish.", true); return; }
-  dir = dir || g.suggestDir;
+  dir = dir || (g.installHere && g.path) || g.suggestDir;
   confirmDialog("Install " + g.project + "?", "", "Install here", () => install(g, dir), {
     text: "Choose another folder",
     fn: async () => {
@@ -758,6 +758,11 @@ async function pick() {
   const g = game();
   toast("Choose the " + g.project + " folder in the window that opened.");
   const r = await api("pick", { id: g.id });
+  if (r.status === 409 && r.data.offerInstall) {
+    confirmDialog("No " + g.project + " client there", "", "Download it here", () => install(g, r.data.dir));
+    $("dlgBody").innerHTML = `${esc(r.data.error)}<br><br>Download the latest client from ${esc(g.project)}'s GitHub page into this folder?<span class="path">${esc(r.data.dir)}</span>`;
+    return;
+  }
   if (r.status !== 200) toast(r.data.error || "Couldn't set the folder.", true);
   else if (r.data.status === "ok") toast(g.project + " folder saved.");
   refresh();

@@ -166,7 +166,10 @@ func startInstall(g *GameDef, dir string) error {
 	if err := checkGameDir(dir); err != nil {
 		return err
 	}
-	if !dirEmptyOrMissing(dir) {
+	// A single-file download (Reclaimer's client) only adds that one file, so
+	// it can go into a folder that already has things in it; a zip needs an
+	// empty or new folder so it never mixes with other files.
+	if g.AssetIsZip && !dirEmptyOrMissing(dir) {
 		return errors.New("that folder isn't empty — choose an empty or new folder")
 	}
 	jobMu.Lock()

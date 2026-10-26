@@ -387,7 +387,10 @@ type GameState struct {
 	Art        string   `json:"art"`
 	ArtCustom  bool     `json:"artCustom"`
 	CanInstall bool     `json:"canInstall"`
-	SuggestDir string   `json:"suggestDir"`
+	// InstallHere: the download is one file, so it can go into the folder
+	// already chosen for this game.
+	InstallHere bool   `json:"installHere"`
+	SuggestDir  string `json:"suggestDir"`
 }
 
 func buildState() map[string]any {
@@ -433,6 +436,7 @@ func buildState() map[string]any {
 		s.Online = getOnline(g.ID)
 		s.Art, s.ArtCustom = artURL(g.ID)
 		s.CanInstall = g.AssetRe != nil && g.Repo != "" && !g.ClosedBeta
+		s.InstallHere = s.CanInstall && !g.AssetIsZip && s.Path != "" && checkGameDir(s.Path) == nil
 		if !s.Installed && s.CanInstall {
 			s.SuggestDir = suggestInstallDir(g)
 		}
@@ -760,6 +764,11 @@ func routes() *http.ServeMux {
 				if why := g.WrongFolder(p); why != "" {
 					msg = why
 				}
+			}
+			if g.AssetRe != nil && g.Repo != "" && !g.AssetIsZip && !g.ClosedBeta {
+				// Offer to download the game into the folder they chose.
+				writeJSON(w, 409, map[string]string{"error": msg, "offerInstall": "1", "dir": p})
+				return
 			}
 			writeJSON(w, 400, map[string]string{"error": msg})
 			return

@@ -2,6 +2,8 @@
 
 ## v0.3.7
 - Fix: the launcher no longer mistakes a Project Reclaimer **server** folder for the game (a server flashes a window and closes). It now says "That folder is a Project Reclaimer server, not the game" and asks for the folder with project-reclaimer-client.
+- If the folder you choose for Halo 3 + ODST doesn't have the Reclaimer client, the launcher offers to download the latest client straight into that folder (checked against GitHub's checksum).
+- Halo 3 + ODST page: a note to put the Reclaimer client in the folder you choose.
 
 ## v0.3.6
 - Halo 3 is now **Halo 3 + ODST**: Project Reclaimer plays both. New combined background art, and the launcher shows whether Halo 3: ODST is installed in MCC (you must own Halo 3: ODST on Steam to play it).
